@@ -25,7 +25,8 @@ class FileInputParser {
     format: SourceFormat,
     classStore: ClassStore,
     classLoader: ClassLoader,
-    parser: Parser = schemaParser): List[Either[Schema, Protocol]] = {
+    parser: Parser = schemaParser,
+    processedFileNames: Set[String] = Set.empty): List[(String, Either[Schema, Protocol])] = {
     def unUnion(schema: Schema) = {
       schema.getType match {
         case UNION => schema.getTypes().asScala.toList
@@ -73,21 +74,23 @@ class FileInputParser {
       }
       unUnion(parsed.get)// throw the avro parse exception if Failure
     }
-    
-    val schemaOrProtocols: List[Either[Schema, Protocol]] = {
+
+    val fullFileName = infile.getCanonicalPath
+
+    val schemaOrProtocols: List[(String,Either[Schema, Protocol])] = {
 
       infile.getName.split("\\.").last match {
         case "avro" =>
           val gdr = new GenericDatumReader[GenericRecord]
           val dfr = new DataFileReader(infile, gdr)
           val schemas = unUnion(dfr.getSchema)
-          schemas.map(Left(_))
+          schemas.map(x => fullFileName -> Left(x))
         case "avsc" =>
           val schemas = tryParse(infile, parser)
-          schemas.map(Left(_))
+          schemas.map(x => fullFileName -> Left(x))
         case "avpr" =>
           val protocol = Protocol.parse(infile)
-          List(Right(protocol))
+          List(fullFileName ->  Right(protocol))
         case "avdl" =>
           val idlParser = new Idl(infile, classLoader)
           val protocol = idlParser.CompilationUnit()
@@ -99,11 +102,23 @@ class FileInputParser {
            * instead be generated in its own namespace. So, strip the protocol 
            * of all imported types and generate them separately.
            */
+          println(s"importing file for $fullFileName")
           val importedFiles = IdlImportParser.getImportedFiles(infile, classLoader)
-          val importedSchemaOrProtocols = importedFiles.flatMap(file => {
+//          println(s"imported files: $importedFiles")
+          /*val importedSchemaOrProtocols = importedFiles.flatMap(file => {
             val importParser = new Parser() // else attempts to redefine schemas
             getSchemaOrProtocols(file, format, classStore, classLoader, importParser)
-          }).toList
+          }).toList*/
+
+          val importedSchemaOrProtocols = importedFiles.foldLeft(List.empty[(String, Either[Schema, Protocol])])((results, file) => {
+            val processed = processedFileNames ++ results.map(_._1)
+            val subResults = if(processed.contains(file.getCanonicalPath)) Nil else {
+              val importParser = new Parser() // else attempts to redefine schemas
+              getSchemaOrProtocols(file, format, classStore, classLoader, importParser, processed)
+            }
+            results ++ subResults
+          })
+
           def stripImports(
             protocol: Protocol,
             importedSchemaOrProtocols: List[Either[Schema, Protocol]]) = {
@@ -120,16 +135,15 @@ class FileInputParser {
             protocol.setTypes(localTypes.asJava)
             protocol
           }
-          val localProtocol = stripImports(protocol, importedSchemaOrProtocols)
-          // reverse to dependent classes are generated first
-          (Right(localProtocol) +: importedSchemaOrProtocols).reverse
+          val localProtocol = stripImports(protocol, importedSchemaOrProtocols.map(_._2))
+          importedSchemaOrProtocols :+ (fullFileName -> Right(localProtocol))
         case _ =>
           throw new Exception("""File must end in ".avpr" for protocol files, 
             |".avsc" for plain text json files, ".avdl" for IDL files, or .avro 
             |for binary.""".trim.stripMargin)
       }
     }
-    
+
     schemaOrProtocols
   }
 }

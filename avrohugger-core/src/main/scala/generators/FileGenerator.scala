@@ -2,17 +2,14 @@ package avrohugger
 package generators
 
 import avrohugger.format.abstractions.SourceFormat
-import avrohugger.input.DependencyInspector
-import avrohugger.input.NestedSchemaExtractor
+import avrohugger.input.{DependencyInspector, NestedSchemaExtractor}
 // import avrohugger.input.reflectivecompilation.schemagen._
-import avrohugger.input.parsers.{ FileInputParser, StringInputParser}
+import avrohugger.input.parsers.{FileInputParser, StringInputParser}
 import avrohugger.matchers.TypeMatcher
-import avrohugger.stores.{ ClassStore, SchemaStore }
+import avrohugger.stores.{ClassStore, SchemaStore}
+import org.apache.avro.{Protocol, Schema}
 
-import java.io.{File, FileNotFoundException, IOException}
-
-import org.apache.avro.{ Protocol, Schema }
-import org.apache.avro.Schema.Type.ENUM
+import java.io.File
 
 // Unable to overload this class' methods because outDir uses a default value
 private[avrohugger] object FileGenerator {
@@ -26,6 +23,7 @@ private[avrohugger] object FileGenerator {
     typeMatcher: TypeMatcher,
     restrictedFields: Boolean,
     targetScalaPartialVersion: String): Unit = {
+//    println("schemaToFile")
     val topNS: Option[String] = DependencyInspector.getReferredNamespace(schema)
     val topLevelSchemas: List[Schema] =
       NestedSchemaExtractor.getNestedSchemas(schema, schemaStore, typeMatcher)
@@ -46,6 +44,7 @@ private[avrohugger] object FileGenerator {
     typeMatcher: TypeMatcher,
     restrictedFields: Boolean,
     targetScalaPartialVersion: String): Unit = {
+    //println(s"protocolToFile ${protocol.getName}")
     val ns = Option(protocol.getNamespace)
     format.compile(classStore, ns, Right(protocol), outDir, schemaStore, typeMatcher, restrictedFields, targetScalaPartialVersion)
   }
@@ -84,16 +83,16 @@ private[avrohugger] object FileGenerator {
     classLoader: ClassLoader,
     restrictedFields: Boolean,
     targetScalaPartialVersion: String): Unit = {
+    println(s"fileToFile ${inFile.getCanonicalPath}")
     val schemaOrProtocols: List[Either[Schema, Protocol]] =
-      fileParser.getSchemaOrProtocols(inFile, format, classStore, classLoader)
-    schemaOrProtocols.foreach(schemaOrProtocol => schemaOrProtocol match {
-      case Left(schema) => {
+      fileParser.getSchemaOrProtocols(inFile, format, classStore, classLoader).map(_._2)
+    //println(s"schemaOrProtocols: file = ${inFile.getCanonicalPath}. \n ${schemaOrProtocols.mkString("\n")}")
+    schemaOrProtocols.foreach {
+      case Left(schema) =>
         schemaToFile(schema, outDir, format, classStore, schemaStore, typeMatcher, restrictedFields, targetScalaPartialVersion)
-      }
-      case Right(protocol) => {
+      case Right(protocol) =>
         protocolToFile(protocol, outDir, format, classStore, schemaStore, typeMatcher, restrictedFields, targetScalaPartialVersion)
-      }
-    })
+    }
   }
 
 }

@@ -29,6 +29,8 @@ object SpecificScalaTreehugger extends ScalaTreehugger {
     restrictedFields: Boolean,
     targetScalaPartialVersion: String): String = {
 
+//    println("AAAAAAAAAAAAA")
+
     // imports in case a field type is from a different namespace
     val imports: List[Import] = importer.getImports(
       schemaOrProtocol,
