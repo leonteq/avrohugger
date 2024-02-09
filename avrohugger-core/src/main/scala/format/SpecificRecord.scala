@@ -52,7 +52,7 @@ object SpecificRecord extends SourceFormat{
 
     // generate as RPC trait and separate class/enum strings
     def protocolToRPC(protocol: Protocol): List[CompilationUnit] = {
-//      println(s"protocolToRPC $protocol")
+      println(s"protocolToRPC ${protocol.getName}")
       val localSubtypes = getLocalSubtypes(protocol)
       val localEnums = localSubtypes.filter(isEnum)
       val localNonEnums = localSubtypes.filterNot(isEnum)
@@ -145,6 +145,7 @@ object SpecificRecord extends SourceFormat{
         // SpecificRecord requires java enums as of Avro 1.7.7, thus hard-coded
         val messages = protocol.getMessages
         if (messages.isEmpty) {
+
           val localSubtypes = enumType match {
             case JavaEnum => getLocalSubtypes(protocol).filterNot(isEnum)
             case ScalaCaseObjectEnum => List.empty

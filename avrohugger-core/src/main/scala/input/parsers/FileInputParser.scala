@@ -2,31 +2,50 @@ package avrohugger
 package input
 package parsers
 
-import format.abstractions.SourceFormat
-import stores.ClassStore
-import org.apache.avro.{Protocol, Schema}
+import avrohugger.format.abstractions.SourceFormat
+import avrohugger.stores.ClassStore
 import org.apache.avro.Schema.Parser
 import org.apache.avro.Schema.Type.{ENUM, FIXED, RECORD, UNION}
 import org.apache.avro.compiler.idl.Idl
-import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.avro.file.DataFileReader
-import org.apache.avro.SchemaParseException
+import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
+import org.apache.avro.{Protocol, Schema, SchemaParseException}
 
 import java.io.File
 import scala.jdk.CollectionConverters._
-import scala.util.Try
+import scala.util.{Right, Try}
+
+case class RecursiveValues(
+                            processedFiles: Set[String],
+                            processedSchema:Set[Schema],
+                            schemaOrProtocols:List[Either[Schema, Protocol]])
 
 class FileInputParser {
-  
+
   val schemaParser = new Parser()
 
   def getSchemaOrProtocols(
+                            infile: File,
+                            format: SourceFormat,
+                            classStore: ClassStore,
+                            classLoader: ClassLoader,
+                            parser: Parser = schemaParser): List[Either[Schema, Protocol]] =
+    _getSchemaOrProtocols(
+      infile = infile,
+        format = format,
+        classStore = classStore,
+        classLoader = classLoader,
+        parser = parser,
+      recursiveValues = RecursiveValues(Set.empty,Set.empty,Nil)
+    ).schemaOrProtocols
+
+  private def _getSchemaOrProtocols(
     infile: File,
     format: SourceFormat,
     classStore: ClassStore,
     classLoader: ClassLoader,
-    parser: Parser = schemaParser,
-    processedFileNames: Set[String] = Set.empty): List[(String, Either[Schema, Protocol])] = {
+    parser: Parser,
+    recursiveValues: RecursiveValues): RecursiveValues = {
     def unUnion(schema: Schema) = {
       schema.getType match {
         case UNION => schema.getTypes().asScala.toList
@@ -77,20 +96,32 @@ class FileInputParser {
 
     val fullFileName = infile.getCanonicalPath
 
-    val schemaOrProtocols: List[(String,Either[Schema, Protocol])] = {
+    val schemaOrProtocols: RecursiveValues = {
 
       infile.getName.split("\\.").last match {
         case "avro" =>
           val gdr = new GenericDatumReader[GenericRecord]
           val dfr = new DataFileReader(infile, gdr)
           val schemas = unUnion(dfr.getSchema)
-          schemas.map(x => fullFileName -> Left(x))
+          RecursiveValues(
+            processedFiles =  recursiveValues.processedFiles + fullFileName,
+              processedSchema = recursiveValues.processedSchema ++ schemas,
+              schemaOrProtocols  = recursiveValues.schemaOrProtocols ++ schemas.map(Left(_) )
+          )
         case "avsc" =>
           val schemas = tryParse(infile, parser)
-          schemas.map(x => fullFileName -> Left(x))
+          RecursiveValues(
+            processedFiles =  recursiveValues.processedFiles + fullFileName,
+            processedSchema = recursiveValues.processedSchema ++ schemas,
+            schemaOrProtocols  = recursiveValues.schemaOrProtocols ++ schemas.map(Left(_) )
+          )
         case "avpr" =>
           val protocol = Protocol.parse(infile)
-          List(fullFileName ->  Right(protocol))
+          RecursiveValues(
+            processedFiles =  recursiveValues.processedFiles + fullFileName,
+            processedSchema = recursiveValues.processedSchema ++ protocol.getTypes.asScala,
+            schemaOrProtocols  = recursiveValues.schemaOrProtocols :+ Right(protocol)
+          )
         case "avdl" =>
           val idlParser = new Idl(infile, classLoader)
           val protocol = idlParser.CompilationUnit()
@@ -110,33 +141,27 @@ class FileInputParser {
             getSchemaOrProtocols(file, format, classStore, classLoader, importParser)
           }).toList*/
 
-          val importedSchemaOrProtocols = importedFiles.foldLeft(List.empty[(String, Either[Schema, Protocol])])((results, file) => {
-            val processed = processedFileNames ++ results.map(_._1)
-            val subResults = if(processed.contains(file.getCanonicalPath)) Nil else {
+          val importedSchemaOrProtocols = importedFiles.foldLeft(recursiveValues)((r, file) => {
+            val canonicalPath = file.getCanonicalPath
+            if( r.processedFiles.contains(canonicalPath)) {
+              println(s"Ignoring already processed $canonicalPath ")
+              r
+            } else {
               val importParser = new Parser() // else attempts to redefine schemas
-              getSchemaOrProtocols(file, format, classStore, classLoader, importParser, processed)
+              _getSchemaOrProtocols(file, format, classStore, classLoader, importParser, r)
             }
-            results ++ subResults
           })
 
-          def stripImports(
-            protocol: Protocol,
-            importedSchemaOrProtocols: List[Either[Schema, Protocol]]) = {
-            val imported = importedSchemaOrProtocols.flatMap(avroDef => {
-              avroDef match {
-                case Left(importedSchema) => List(importedSchema)
-                case Right(importedProtocol) => importedProtocol.getTypes().asScala
-              }
-            })
-            val types = protocol.getTypes().asScala.toList
-            val localTypes = imported.foldLeft(types)((remaining, imported) => {
-              remaining.filterNot(remainingType => remainingType == imported)
-            })
-            protocol.setTypes(localTypes.asJava)
-            protocol
-          }
-          val localProtocol = stripImports(protocol, importedSchemaOrProtocols.map(_._2))
-          importedSchemaOrProtocols :+ (fullFileName -> Right(localProtocol))
+
+          val imported = importedSchemaOrProtocols.processedSchema
+          val localProtocol = stripImports(protocol, imported)
+
+          RecursiveValues(
+            processedFiles =  importedSchemaOrProtocols.processedFiles + fullFileName,
+            processedSchema = importedSchemaOrProtocols.processedSchema ++ localProtocol.getTypes.asScala,
+            schemaOrProtocols  = importedSchemaOrProtocols.schemaOrProtocols :+ Right(localProtocol)
+          )
+
         case _ =>
           throw new Exception("""File must end in ".avpr" for protocol files, 
             |".avsc" for plain text json files, ".avdl" for IDL files, or .avro 
@@ -145,5 +170,12 @@ class FileInputParser {
     }
 
     schemaOrProtocols
+  }
+
+  private def stripImports(protocol: Protocol, importedTypes: Set[Schema]) = {
+    val types = protocol.getTypes.asScala.toSet
+    val localTypes = types.diff(importedTypes)
+    protocol.setTypes(localTypes.asJava)
+    protocol
   }
 }

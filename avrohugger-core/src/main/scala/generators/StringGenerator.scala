@@ -105,7 +105,7 @@ private[avrohugger] object StringGenerator {
     targetScalaPartialVersion: String): List[String] = {
     try {
       val schemaOrProtocols: List[Either[Schema, Protocol]] =
-        fileParser.getSchemaOrProtocols(inFile, format, classStore, classLoader).map(_._2)
+        fileParser.getSchemaOrProtocols(inFile, format, classStore, classLoader)
       schemaOrProtocols.flatMap(schemaOrProtocol => schemaOrProtocol match {
         case Left(schema) => {
           schemaToStrings(schema, format, classStore, schemaStore, typeMatcher, restrictedFields, targetScalaPartialVersion)
