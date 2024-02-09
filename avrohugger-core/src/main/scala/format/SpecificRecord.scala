@@ -142,7 +142,6 @@ object SpecificRecord extends SourceFormat{
         // SpecificRecord requires java enums as of Avro 1.7.7, thus hard-coded
         val messages = protocol.getMessages
         if (messages.isEmpty) {
-
           val localSubtypes = enumType match {
             case JavaEnum => getLocalSubtypes(protocol).filterNot(isEnum)
             case ScalaCaseObjectEnum => List.empty

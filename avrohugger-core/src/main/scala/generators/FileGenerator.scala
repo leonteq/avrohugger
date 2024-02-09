@@ -83,12 +83,14 @@ private[avrohugger] object FileGenerator {
     targetScalaPartialVersion: String): Unit = {
     val schemaOrProtocols: List[Either[Schema, Protocol]] =
       fileParser.getSchemaOrProtocols(inFile, format, classStore, classLoader)
-    schemaOrProtocols.foreach {
-      case Left(schema) =>
+    schemaOrProtocols.foreach(schemaOrProtocol => schemaOrProtocol match {
+      case Left(schema) => {
         schemaToFile(schema, outDir, format, classStore, schemaStore, typeMatcher, restrictedFields, targetScalaPartialVersion)
-      case Right(protocol) =>
+      }
+      case Right(protocol) => {
         protocolToFile(protocol, outDir, format, classStore, schemaStore, typeMatcher, restrictedFields, targetScalaPartialVersion)
-    }
+      }
+    })
   }
 
 }
