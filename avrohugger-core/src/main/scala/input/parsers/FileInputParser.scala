@@ -133,18 +133,11 @@ class FileInputParser {
            * instead be generated in its own namespace. So, strip the protocol 
            * of all imported types and generate them separately.
            */
-          println(s"importing file for $fullFileName")
           val importedFiles = IdlImportParser.getImportedFiles(infile, classLoader)
-//          println(s"imported files: $importedFiles")
-          /*val importedSchemaOrProtocols = importedFiles.flatMap(file => {
-            val importParser = new Parser() // else attempts to redefine schemas
-            getSchemaOrProtocols(file, format, classStore, classLoader, importParser)
-          }).toList*/
 
           val importedSchemaOrProtocols = importedFiles.foldLeft(recursiveValues)((r, file) => {
             val canonicalPath = file.getCanonicalPath
             if( r.processedFiles.contains(canonicalPath)) {
-              println(s"Ignoring already processed $canonicalPath ")
               r
             } else {
               val importParser = new Parser() // else attempts to redefine schemas

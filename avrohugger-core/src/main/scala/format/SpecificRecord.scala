@@ -39,8 +39,6 @@ object SpecificRecord extends SourceFormat{
     restrictedFields: Boolean,
     targetScalaPartialVersion: String): List[CompilationUnit] = {
 
-//    println(s"asCompilationUnits $schemaOrProtocol ")
-
     registerTypes(schemaOrProtocol, classStore, typeMatcher)
     val enumType = typeMatcher.avroScalaTypes.`enum`
 
@@ -52,7 +50,6 @@ object SpecificRecord extends SourceFormat{
 
     // generate as RPC trait and separate class/enum strings
     def protocolToRPC(protocol: Protocol): List[CompilationUnit] = {
-      println(s"protocolToRPC ${protocol.getName}")
       val localSubtypes = getLocalSubtypes(protocol)
       val localEnums = localSubtypes.filter(isEnum)
       val localNonEnums = localSubtypes.filterNot(isEnum)
@@ -223,7 +220,6 @@ object SpecificRecord extends SourceFormat{
       typeMatcher,
       restrictedFields,
       targetScalaPartialVersion)
-    println(s"CompilationUnits: ${compilationUnits.flatMap(_.maybeFilePath).mkString(",")}")
     compilationUnits.foreach(writeToFile)
   }
 

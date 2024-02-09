@@ -46,8 +46,6 @@ object IdlImportParser {
     val schemaMatches = avscPattern.findAllIn(contents).matchData.toList
     val importMatches = idlMatches ::: protocolMatches ::: schemaMatches
 
-//    println(s"importMatches $importMatches")
-
     val (localImports, nonLocalMatches): (List[File], List[Match]) =
       importMatches.foldLeft((List.empty[File], List.empty[Match])){
         case ((ai,am), m) =>

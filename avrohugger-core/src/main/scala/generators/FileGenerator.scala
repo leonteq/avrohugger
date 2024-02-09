@@ -23,7 +23,6 @@ private[avrohugger] object FileGenerator {
     typeMatcher: TypeMatcher,
     restrictedFields: Boolean,
     targetScalaPartialVersion: String): Unit = {
-//    println("schemaToFile")
     val topNS: Option[String] = DependencyInspector.getReferredNamespace(schema)
     val topLevelSchemas: List[Schema] =
       NestedSchemaExtractor.getNestedSchemas(schema, schemaStore, typeMatcher)
@@ -44,8 +43,6 @@ private[avrohugger] object FileGenerator {
     typeMatcher: TypeMatcher,
     restrictedFields: Boolean,
     targetScalaPartialVersion: String): Unit = {
-    println(s"protocolToFile ${protocol.getName}")
-    println(s"Protocol: $protocol")
     val ns = Option(protocol.getNamespace)
     format.compile(classStore, ns, Right(protocol), outDir, schemaStore, typeMatcher, restrictedFields, targetScalaPartialVersion)
   }
@@ -84,10 +81,8 @@ private[avrohugger] object FileGenerator {
     classLoader: ClassLoader,
     restrictedFields: Boolean,
     targetScalaPartialVersion: String): Unit = {
-    println(s"fileToFile ${inFile.getCanonicalPath}")
     val schemaOrProtocols: List[Either[Schema, Protocol]] =
       fileParser.getSchemaOrProtocols(inFile, format, classStore, classLoader)
-    //println(s"schemaOrProtocols: file = ${inFile.getCanonicalPath}. \n ${schemaOrProtocols.mkString("\n")}")
     schemaOrProtocols.foreach {
       case Left(schema) =>
         schemaToFile(schema, outDir, format, classStore, schemaStore, typeMatcher, restrictedFields, targetScalaPartialVersion)
