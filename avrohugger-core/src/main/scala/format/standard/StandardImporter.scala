@@ -135,7 +135,7 @@ object StandardImporter extends Importer {
     val fixedSchemas = getFixedSchemas(topLevelSchemas)
     val enumSchemas = getEnumSchemas(topLevelSchemas)
     val userDefinedDeps = getUserDefinedImports(recordSchemas ++ fixedSchemas ++ enumSchemas, currentNamespace, typeMatcher)
-    val shapelessDeps = getShapelessImports(recordSchemas, typeMatcher)
+    val shapelessDeps = getShapelessImports(recordSchemas.toList, typeMatcher)
     val libraryDeps = shapelessDeps
     libraryDeps ++ userDefinedDeps
   }

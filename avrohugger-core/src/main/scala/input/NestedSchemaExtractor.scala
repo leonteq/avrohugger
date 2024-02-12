@@ -2,11 +2,10 @@ package avrohugger
 package input
 
 import avrohugger.matchers.TypeMatcher
-import stores.SchemaStore
-import types.EnumAsScalaString
-
+import avrohugger.stores.SchemaStore
+import avrohugger.types.EnumAsScalaString
 import org.apache.avro.Schema
-import org.apache.avro.Schema.Type.{ARRAY, ENUM, FIXED, MAP, RECORD, UNION}
+import org.apache.avro.Schema.Type._
 
 import scala.jdk.CollectionConverters._
 
@@ -15,38 +14,38 @@ object NestedSchemaExtractor {
   def getNestedSchemas(
     schema: Schema,
     schemaStore: SchemaStore,
-    typeMatcher: TypeMatcher): List[Schema] = {
+    typeMatcher: TypeMatcher): Set[Schema] = {
     def extract(
       schema: Schema,
-      fieldPath: List[String] = List.empty): List[Schema] = {
+      fieldPath: List[String] = List.empty): Set[Schema] = {
 
       schema.getType match {
         case RECORD =>
-          val fields: List[Schema.Field] = schema.getFields().asScala.toList
-          val fieldSchemas: List[Schema] = fields.map(field => field.schema)
-          def flattenSchema(fieldSchema: Schema): List[Schema] = {
+          val fields: Set[Schema.Field] = schema.getFields().asScala.toSet
+          val fieldSchemas: Set[Schema] = fields.map(field => field.schema)
+          def flattenSchema(fieldSchema: Schema): Set[Schema] = {
             fieldSchema.getType match {
               case ARRAY => flattenSchema(fieldSchema.getElementType)
               case MAP => flattenSchema(fieldSchema.getValueType)
               case RECORD => {
                 // if the field schema is one that has already been stored, use that one
-                if (schemaStore.schemas.contains(fieldSchema.getFullName)) List()
+                if (schemaStore.schemas.contains(fieldSchema.getFullName)) Set()
                 // if we've already seen this schema (recursive schemas) don't traverse further
-                else if (fieldPath.contains(fieldSchema.getFullName)) List()
-                else fieldSchema :: extract(fieldSchema, fieldSchema.getFullName :: fieldPath)
+                else if (fieldPath.contains(fieldSchema.getFullName)) Set()
+                else   Set(fieldSchema) ++ extract(fieldSchema, fieldSchema.getFullName :: fieldPath)
               }
-              case UNION => fieldSchema.getTypes().asScala.toList.flatMap(x => flattenSchema(x))
+              case UNION => fieldSchema.getTypes().asScala.toSet.flatMap(x => flattenSchema(x))
               case ENUM => {
                 // if the field schema is one that has already been stored, use that one
-                if (schemaStore.schemas.contains(fieldSchema.getFullName)) List()
-                else List(fieldSchema)
+                if (schemaStore.schemas.contains(fieldSchema.getFullName)) Set()
+                else Set(fieldSchema)
               }
               case FIXED => {
                 // if the field schema is one that has already been stored, use that one
-                if (schemaStore.schemas.contains(fieldSchema.getFullName)) List()
-                else List(fieldSchema)
+                if (schemaStore.schemas.contains(fieldSchema.getFullName)) Set()
+                else Set(fieldSchema)
               }
-              case _ => List(fieldSchema)
+              case _ => Set(fieldSchema)
             }
           }
           val flatSchemas = fieldSchemas.flatMap(fieldSchema => flattenSchema(fieldSchema))
@@ -56,13 +55,13 @@ object NestedSchemaExtractor {
           }
           val nestedTopLevelSchemas = flatSchemas.filter(topLevelTypes)
           nestedTopLevelSchemas
-        case ENUM => List(schema)
-        case FIXED => List(schema)
-        case _ => Nil
+        case ENUM => Set(schema)
+        case FIXED => Set(schema)
+        case _ => Set.empty
       } 
     }
 
-    schema::extract(schema)
+    Set(schema) ++ extract(schema)
   }
 }
 

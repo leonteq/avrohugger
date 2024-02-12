@@ -29,18 +29,19 @@ object SpecificImporter extends Importer {
     val recordSchemas = getRecordSchemas(topLevelSchemas)
     val enumSchemas = getEnumSchemas(topLevelSchemas)
     val userDefinedDeps = getUserDefinedImports(recordSchemas ++ enumSchemas, currentNamespace, typeMatcher)
-    val shapelessDeps = getShapelessImports(recordSchemas, typeMatcher)
-    val libraryDeps = shapelessDeps
+    //TODO We should not be needing SHAPELESS and it also poorly handles nesting
+    //val shapelessDeps = getShapelessImports(recordSchemas.toList, typeMatcher)
+    //val libraryDeps = shapelessDeps
     
     schemaOrProtocol match {
       case Left(schema) => {
-        if (schema.getType == RECORD) switchImport :: libraryDeps ::: userDefinedDeps
-        else libraryDeps ++ userDefinedDeps
+        if (schema.getType == RECORD) switchImport :: /*libraryDeps :::*/  userDefinedDeps
+        else /*libraryDeps ++*/ userDefinedDeps
       }
       case Right(protocol) => {
         val types = protocol.getTypes().asScala.toList
         val messages = protocol.getMessages.asScala.toMap
-        if (messages.isEmpty) switchImport :: libraryDeps ::: userDefinedDeps // for ADT
+        if (messages.isEmpty) switchImport :: /*libraryDeps :::*/ userDefinedDeps // for ADT
         else List.empty // for RPC
       }
     }
@@ -149,6 +150,8 @@ object SpecificImporter extends Importer {
       
     shapelessImport(shapelessCopSymbols.distinct) ++
       shapelessImport(shapelessTag.distinct)
+
+
   }
 
 }
