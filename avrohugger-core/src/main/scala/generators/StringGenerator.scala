@@ -29,7 +29,7 @@ private[avrohugger] object StringGenerator {
     val topLevels =
       NestedSchemaExtractor.getNestedSchemas(schema, schemaStore, typeMatcher)
     //reversed to process nested classes first
-    val compilationUnits = topLevels.reverse.distinct.flatMap(schema => {
+    val compilationUnits = topLevels.flatMap(schema => {
       // pass in the top-level schema's namespace if the nested schema has none
       val maybeNS = DependencyInspector.getReferredNamespace(schema) orElse {
         maybeNamespace
@@ -44,7 +44,7 @@ private[avrohugger] object StringGenerator {
         restrictedFields,
         targetScalaPartialVersion)
     })
-    compilationUnits.map(compUnit => removeExtraWarning(compUnit.codeString))
+    compilationUnits.map(compUnit => removeExtraWarning(compUnit.codeString)).toList
   }
 
   def protocolToStrings(
