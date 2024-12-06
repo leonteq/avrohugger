@@ -30,7 +30,7 @@ object SpecificScalaTreehugger extends ScalaTreehugger {
     targetScalaPartialVersion: String): String = {
 
     // imports in case a field type is from a different namespace
-    val imports: List[Import] = importer.getImports(
+    val imports: Set[Import] = importer.getImports(
       schemaOrProtocol,
       namespace,
       schemaStore,
@@ -63,13 +63,12 @@ object SpecificScalaTreehugger extends ScalaTreehugger {
 
     // wrap the definitions in a block with a comment and a package
     val tree = {
-      val blockContent = imports ++ topLevelDefs
+      val blockContent = imports.toList ::: topLevelDefs
       if (namespace.isDefined) BLOCK(blockContent).inPackage(namespace.get)
       else BLOCK(blockContent).withoutPackage
     }.withDoc("MACHINE-GENERATED FROM AVRO SCHEMA. DO NOT EDIT DIRECTLY")
 
-    val codeString = treeToString(tree)
-    codeString
+    treeToString(tree)
   }
 
 }
