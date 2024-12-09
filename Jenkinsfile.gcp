@@ -1,0 +1,8 @@
+#!/usr/bin/env groovy
+
+pipelineEportalLibrary {
+    GITHUB_REPO = 'avrohugger'
+    RUN_SBT_TEST = false
+    RUN_YARN_TEST = false
+    USE_FEATURE_RELEASE_PROCESS = true
+}
