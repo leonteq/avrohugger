@@ -5,12 +5,12 @@ lazy val avroVersion = "1.12.0"
 
 lazy val commonSettings = Seq(
   organization := "com.julianpeeters",
-  version := "3.0-MJ-SNAPSHOT",
+//  version := "3.0-MJ-SNAPSHOT",
   ThisBuild / versionScheme := Some("semver-spec"),
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
   Test / scalacOptions ++= Seq("-Yrangepos"),
-  scalaVersion := "3.3.4",
-  crossScalaVersions := Seq("2.12.20", "2.13.15", scalaVersion.value),
+  scalaVersion := "2.13.15",
+  crossScalaVersions := Seq("2.12.20", scalaVersion.value),
   libraryDependencies += "org.apache.avro" % "avro" % avroVersion,
   libraryDependencies += "org.apache.avro" % "avro-compiler" % avroVersion,
   libraryDependencies := { CrossVersion.partialVersion(scalaVersion.value) match {
@@ -56,8 +56,10 @@ lazy val commonSettings = Seq(
 )
 
 lazy val avrohugger = (project in file("."))
+  .enablePlugins(EPortalSbtSettings)
   .settings(
-    commonSettings
+    commonSettings,
+    Release.parentReleaseSettings(Seq(`avrohugger-core`, `avrohugger-filesorter`, `avrohugger-tools`), "avrohugger")
   ).aggregate(`avrohugger-core`, `avrohugger-filesorter`, `avrohugger-tools`)
 
 
