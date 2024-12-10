@@ -1,11 +1,9 @@
-import org.scalafmt.sbt.ScalafmtPlugin
 import org.scalafmt.sbt.ScalafmtPlugin.autoImport.scalafmtOnCompile
 
 lazy val avroVersion = "1.12.0"
 
 lazy val commonSettings = Seq(
   organization := "com.julianpeeters",
-//  version := "3.0-MJ-SNAPSHOT",
   ThisBuild / versionScheme := Some("semver-spec"),
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
   Test / scalacOptions ++= Seq("-Yrangepos"),
@@ -31,12 +29,12 @@ lazy val commonSettings = Seq(
   libraryDependencies += "org.specs2" %% "specs2-core" % "4.20.2" % "test",
   publishMavenStyle := true,
   Test / publishArtifact := false,
-  publishTo := {
-  if (isSnapshot.value)
-    Opts.resolver.sonatypeOssSnapshots.headOption
-  else
-    Some(Opts.resolver.sonatypeStaging)
-  },
+//  publishTo := {
+//  if (isSnapshot.value)
+//    Opts.resolver.sonatypeOssSnapshots.headOption
+//  else
+//    Some(Opts.resolver.sonatypeStaging)
+//  },
   pomIncludeRepository := { _ => false },
   licenses := Seq("Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
   homepage := Some(url("https://github.com/julianpeeters/avrohugger")),
@@ -53,6 +51,7 @@ lazy val commonSettings = Seq(
       </developer>
     </developers>),
   scalafmtOnCompile := true,
+//  scmInfo := Some(ScmInfo(url("https://github.com/leonteq/eportal-oidc-lib"), "scm:git:git@github.com:leonteq/eportal-oidc-lib.git")),
   artifactType := ArtifactType.JarLibrary,
   releaseIgnoreUntrackedFiles := true
 )
