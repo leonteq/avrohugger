@@ -53,6 +53,7 @@ lazy val commonSettings = Seq(
       </developer>
     </developers>),
   scalafmtOnCompile := true,
+  artifactType := ArtifactType.JarLibrary,
   releaseIgnoreUntrackedFiles := true
 )
 
