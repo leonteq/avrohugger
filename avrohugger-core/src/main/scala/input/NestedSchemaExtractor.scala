@@ -22,7 +22,7 @@ object NestedSchemaExtractor {
               fieldSchema.getType match {
                 case ARRAY  => flattenSchema(fieldSchema.getElementType)
                 case MAP    => flattenSchema(fieldSchema.getValueType)
-                case RECORD => extract(fieldSchema, fieldPath + fieldSchema.getFullName) + fieldSchema
+                case RECORD => extract(fieldSchema, fieldPath + fieldSchema.getFullName + schema.getFullName) + fieldSchema
                 case UNION  => fieldSchema.getTypes().asScala.toList.flatMap(flattenSchema).toSet
                 case ENUM   => Set(fieldSchema)
                 case FIXED  => Set(fieldSchema)

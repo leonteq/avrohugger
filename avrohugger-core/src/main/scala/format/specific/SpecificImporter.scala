@@ -23,23 +23,23 @@ object SpecificImporter extends Importer {
     typeMatcher:      TypeMatcher
   ): Set[Import] = {
 
-    println("1")
+//    println("1")
     val switchAnnotSymbol = RootClass.newClass("scala.annotation.switch")
-    println("2")
+//    println("2")
     val switchImport = Set(IMPORT(switchAnnotSymbol))
-    println("3")
+//    println("3")
     val topLevelSchemas = getTopLevelSchemas(schemaOrProtocol, schemaStore, typeMatcher)
-    println("4")
+//    println("4")
     val recordSchemas = getRecordSchemas(topLevelSchemas)
-    println("5")
+//    println("5")
     val enumSchemas = getEnumSchemas(topLevelSchemas)
-    println("6")
+//    println("6")
     val userDefinedDeps = getUserDefinedImports(recordSchemas ++ enumSchemas, currentNamespace, typeMatcher)
-    println("7")
+//    println("7")
     val shapelessDeps = getShapelessImports(recordSchemas, typeMatcher)
-    println("8")
+//    println("8")
     val libraryDeps = shapelessDeps
-    println("9")
+//    println("9")
 
     schemaOrProtocol match {
       case Left(schema) =>

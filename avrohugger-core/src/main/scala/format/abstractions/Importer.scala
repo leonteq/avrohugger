@@ -43,8 +43,8 @@ trait Importer {
       .flatMap { schema =>
         schema.getType match {
           case RECORD =>
-            val fieldSchemasWithChildSchemas = getFieldSchemas(schema).toSeq
-              .filter(s => alreadyImported.contains(s))
+            val fieldSchemasWithChildSchemas = getFieldSchemas(schema)
+              .intersect(alreadyImported)
               .flatMap(s => nextSchemas(s, alreadyImported + s))
             Seq(schema) ++ fieldSchemasWithChildSchemas
           case ENUM =>
@@ -54,16 +54,16 @@ trait Importer {
               .getTypes()
               .asScala
               .find(s => s.getType != NULL)
-              .toSeq
-              .filter(s => alreadyImported.contains(s))
+              .toSet
+              .intersect(alreadyImported)
               .flatMap(s => nextSchemas(schema, alreadyImported + s))
           case MAP =>
-            Seq(schema.getValueType)
-              .filter(s => alreadyImported.contains(s))
+            Set(schema.getValueType)
+              .intersect(alreadyImported)
               .flatMap(s => nextSchemas(schema, alreadyImported + s))
           case ARRAY =>
-            Seq(schema.getElementType)
-              .filter(s => alreadyImported.contains(s))
+            Set(schema.getElementType)
+              .intersect(alreadyImported)
               .flatMap(s => nextSchemas(schema, alreadyImported + s))
           case _ =>
             Seq.empty[Schema]
@@ -73,14 +73,7 @@ trait Importer {
   }
 
   def getFixedSchemas(topLevelSchemas: Set[Schema]): Set[Schema] =
-    topLevelSchemas
-      .flatMap { schema =>
-        schema.getType match {
-          case FIXED => Seq(schema)
-          case _     => Seq.empty[Schema]
-        }
-      }
-      .filter(_.getType == FIXED)
+    topLevelSchemas.filter(_.getType == FIXED)
 
   def getFieldSchemas(schema: Schema): Set[Schema] =
     schema.getFields().asScala.toList.map(_.schema).toSet
