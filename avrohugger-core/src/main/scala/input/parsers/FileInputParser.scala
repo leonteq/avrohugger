@@ -7,10 +7,10 @@ import stores.ClassStore
 import org.apache.avro.{Protocol, Schema}
 import org.apache.avro.Schema.Parser
 import org.apache.avro.Schema.Type.{ENUM, FIXED, RECORD, UNION}
-import org.apache.avro.compiler.idl.Idl
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.avro.file.DataFileReader
 import org.apache.avro.SchemaParseException
+import org.apache.avro.compiler.idl.Idl
 
 import java.io.File
 import scala.jdk.CollectionConverters._
@@ -52,7 +52,7 @@ class FileInputParser {
         sys.error(s"Can't redefine:  ${nonEqualElements.mkString(",")} in $infile")
       } else {
         if (commonElements.isEmpty) {
-          val _ = parser.addTypes(tempParser.getTypes)
+          val _ = parser.addTypes(tempParser.getTypes.values())
         } else {
           val missingTypes = tempParser.getTypes().keySet().asScala.diff(parser.getTypes().keySet().asScala)
           val _ = parser.addTypes(missingTypes.map { t =>
@@ -132,7 +132,7 @@ class FileInputParser {
 
         val localProtocol = stripImports(protocol, processedSchemas)
         // reverse to dependent classes are generated first
-        (Right(localProtocol) +: importedSchemaOrProtocols).reverse
+        (Right(localProtocol) +: importedSchemaOrProtocols.toList).reverse
       case _ =>
         throw new Exception(
           """File must end in ".avpr" for protocol files,

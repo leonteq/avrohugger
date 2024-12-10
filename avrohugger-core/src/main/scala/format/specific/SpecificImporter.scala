@@ -22,14 +22,23 @@ object SpecificImporter extends Importer {
                   schemaStore: SchemaStore,
                   typeMatcher: TypeMatcher): Set[Import] = {
 
+    println("1")
     val switchAnnotSymbol = RootClass.newClass("scala.annotation.switch")
+    println("2")
     val switchImport = Set(IMPORT(switchAnnotSymbol))
+    println("3")
     val topLevelSchemas = getTopLevelSchemas(schemaOrProtocol, schemaStore, typeMatcher)
+    println("4")
     val recordSchemas = getRecordSchemas(topLevelSchemas)
+    println("5")
     val enumSchemas = getEnumSchemas(topLevelSchemas)
+    println("6")
     val userDefinedDeps = getUserDefinedImports(recordSchemas ++ enumSchemas, currentNamespace, typeMatcher)
-    val shapelessDeps = getShapelessImports(recordSchemas, typeMatcher) //slow
+    println("7")
+    val shapelessDeps = getShapelessImports(recordSchemas, typeMatcher)
+    println("8")
     val libraryDeps = shapelessDeps
+    println("9")
 
     schemaOrProtocol match {
       case Left(schema) =>
@@ -80,23 +89,23 @@ object SpecificImporter extends Importer {
     def determineShapelessTagImport(
                                      schema: Schema,
                                      typeMatcher: TypeMatcher,
-                                     potentialRecursives: Set[String]): List[String] = {
-      if (potentialRecursives.contains(schema.getFullName)) List.empty
+                                     potentialRecursives: Set[String]): Set[String] = {
+      if (potentialRecursives.contains(schema.getFullName)) Set.empty
       else
         schema.getType match {
           case Schema.Type.UNION => schema.getTypes().asScala.toList.flatMap(s =>
-            determineShapelessTagImport(s, typeMatcher, potentialRecursives + schema.getFullName))
+            determineShapelessTagImport(s, typeMatcher, potentialRecursives + schema.getFullName)).toSet
           case Schema.Type.ARRAY => determineShapelessTagImport(schema.getElementType(), typeMatcher, potentialRecursives + schema.getFullName)
           case Schema.Type.MAP => determineShapelessTagImport(schema.getValueType(), typeMatcher, potentialRecursives + schema.getFullName)
           case Schema.Type.RECORD => schema.getFields().asScala.toList.flatMap { f =>
             determineShapelessTagImport(f.schema, typeMatcher, potentialRecursives + schema.getFullName)
-          }
+          }.toSet
           case Schema.Type.BYTES => importsForBigDecimalTagged(schema)
-          case _ => List.empty[String]
+          case _ => Set.empty[String]
         }
     }
 
-    def importsForBigDecimalTagged(schemas: Schema*): List[String] =
+    def importsForBigDecimalTagged(schemas: Schema*): Set[String] =
       schemas.find { schema =>
         schema.getType == Schema.Type.BYTES && LogicalType.foldLogicalTypes(
           schema = schema,
@@ -106,7 +115,7 @@ object SpecificImporter extends Importer {
             case ScalaBigDecimalWithPrecision(_) => true
           }
         }
-      }.map(_ => List("tag.@@")).getOrElse(Nil)
+      }.map(_ => Set("tag.@@")).getOrElse(Set())
 
     def coproductImportsForUnionType(
                                       field: Schema.Field,

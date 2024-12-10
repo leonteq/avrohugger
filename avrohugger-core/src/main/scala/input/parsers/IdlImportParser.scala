@@ -2,8 +2,6 @@ package avrohugger
 package input
 package parsers
 
-import org.apache.avro.{ Protocol, Schema }
-
 import java.io.File
 import scala.util.matching.Regex.Match
 
@@ -17,7 +15,7 @@ object IdlImportParser {
     commentFree
   }
 
-  def getImportedFiles(infile: File, classLoader: ClassLoader): List[File] = {
+  def getImportedFiles(infile: File, classLoader: ClassLoader): Set[File] = {
     def readFile(file: File): String = {
       var count = 0
       val maxTries = 3
@@ -41,28 +39,27 @@ object IdlImportParser {
     val avdlPattern = """import[ \t]+idl[ \t]+"([^"]*\.avdl)"[ \t]*;""".r
     val avprPattern = """import[ \t]+protocol[ \t]+"([^"]*\.avpr)"[ \t]*;""".r
     val avscPattern = """import[ \t]+schema[ \t]+"([^"]*\.avsc)"[ \t]*;""".r
-    val idlMatches = avdlPattern.findAllIn(contents).matchData.toList
-    val protocolMatches = avprPattern.findAllIn(contents).matchData.toList
-    val schemaMatches = avscPattern.findAllIn(contents).matchData.toList
-    val importMatches = idlMatches ::: protocolMatches ::: schemaMatches
+    val idlMatches = avdlPattern.findAllIn(contents).matchData.toSet
+    val protocolMatches = avprPattern.findAllIn(contents).matchData.toSet
+    val schemaMatches = avscPattern.findAllIn(contents).matchData.toSet
+    val importMatches = idlMatches ++ protocolMatches ++ schemaMatches
     
-    val (localImports, nonLocalMatches): (List[File], List[Match]) =
-      importMatches.foldLeft((List.empty[File], List.empty[Match])){
+    val (localImports, nonLocalMatches): (Set[File], Set[Match]) =
+      importMatches.foldLeft((Set.empty[File], Set.empty[Match])){
         case ((ai,am), m) =>
           val f = new File(path + m.group(1))
-          if (f.exists) (ai:+f, am)
-          else (ai, am:+m)
+          if (f.exists) (ai + f, am)
+          else (ai, am + m)
       }
       
-    val classpathImports: List[File] = nonLocalMatches.map(m =>{
+    val classpathImports: Set[File] = nonLocalMatches.map(m =>{
       
       Option(classLoader.getResource(m.group(1))).map(resource =>{
         new File(resource.getFile)
       })
     }).flatMap(_.toList).filter(file => file.exists)
 
-    val importedFiles = classpathImports ++ localImports
-    importedFiles
+    classpathImports ++ localImports
   }
   
 }

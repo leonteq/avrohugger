@@ -142,7 +142,7 @@ trait Importer {
         schema.getType match {
           case RECORD =>
             val fieldSchemasWithChildSchemas = getFieldSchemas(schema)
-              .filter(s => alreadyImported.contains(s))
+              .intersect(alreadyImported)
               .flatMap(s => nextSchemas(s, alreadyImported + s))
             Set(schema) ++ fieldSchemasWithChildSchemas
           case ENUM =>
@@ -150,15 +150,15 @@ trait Importer {
           case UNION =>
             schema.getTypes().asScala
               .find(s => s.getType != NULL).toSet
-              .filter(s => alreadyImported.contains(s))
+              .intersect(alreadyImported)
               .flatMap(s => nextSchemas(schema, alreadyImported + s))
           case MAP =>
             Set(schema.getValueType)
-              .filter(s => alreadyImported.contains(s))
+              .intersect(alreadyImported)
               .flatMap(s => nextSchemas(schema, alreadyImported + s))
           case ARRAY =>
             Set(schema.getElementType)
-              .filter(s => alreadyImported.contains(s))
+              .intersect(alreadyImported)
               .flatMap(s => nextSchemas(schema, alreadyImported + s))
           case _ =>
             Set.empty[Schema]
