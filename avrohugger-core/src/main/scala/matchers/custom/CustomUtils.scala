@@ -12,8 +12,7 @@ object CustomUtils {
 
   def decimalTaggedType(precision: Int, scale: Int): Type =
     // TYPE_REF(REF("scala.math.BigDecimal") INFIX ("@@", precisionScaleType(precision, scale)))
-    TYPE_REF(REF("@@") APPLYTYPE(TYPE_REF("scala.math.BigDecimal"), precisionScaleType(precision, scale)))
-
+    TYPE_REF(REF("@@") APPLYTYPE (TYPE_REF("scala.math.BigDecimal"), precisionScaleType(precision, scale)))
 
   private[this] def numberToNat(int: Int): Type =
     int.toString.map(n => TYPE_REF("shapeless.Nat._" + n)).toList match {

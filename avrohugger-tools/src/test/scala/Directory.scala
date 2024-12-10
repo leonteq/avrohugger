@@ -28,7 +28,6 @@ object Directory {
   val TEST_EXPECTED_MESSAGE =
     TEST_EXPECTED_OUTPUT_BASE_DIR + "example/proto/Message.scala"
 
-
   val TEST_EXPECTED_STRING_OUTPUT_BASE_DIR =
     TEST_DIR + "output-string/"
   val TEST_EXPECTED_STRING_NICKNAME =
@@ -49,11 +48,11 @@ object Directory {
   val TEST_EXPECTED_SPECIFIC_PLAYER =
     TEST_EXPECTED_SPECIFIC_OUTPUT_BASE_DIR + "avro/examples/baseball/Player.scala"
   val TEST_EXPECTED_SPECIFIC_PLAYER_213 = TEST_EXPECTED_SPECIFIC_OUTPUT_BASE_DIR + "avro/examples/baseball/Player_2.13.scala"
-  val TEST_EXPECTED_SPECIFIC_PLAYER_3 = TEST_EXPECTED_SPECIFIC_OUTPUT_BASE_DIR + "avro/examples/baseball/Player_3.scala"
+  val TEST_EXPECTED_SPECIFIC_PLAYER_3   = TEST_EXPECTED_SPECIFIC_OUTPUT_BASE_DIR + "avro/examples/baseball/Player_3.scala"
   val TEST_EXPECTED_SPECIFIC_WRESTLER =
     TEST_EXPECTED_SPECIFIC_OUTPUT_BASE_DIR + "avro/examples/baseball/Wrestler.scala"
   val TEST_EXPECTED_SPECIFIC_WRESTLER_213 = TEST_EXPECTED_SPECIFIC_OUTPUT_BASE_DIR + "avro/examples/baseball/Wrestler_2.13.scala"
-  val TEST_EXPECTED_SPECIFIC_WRESTLER_3 = TEST_EXPECTED_SPECIFIC_OUTPUT_BASE_DIR + "avro/examples/baseball/Wrestler_3.scala"
+  val TEST_EXPECTED_SPECIFIC_WRESTLER_3   = TEST_EXPECTED_SPECIFIC_OUTPUT_BASE_DIR + "avro/examples/baseball/Wrestler_3.scala"
   val TEST_EXPECTED_SPECIFIC_TWITTER =
     TEST_EXPECTED_SPECIFIC_OUTPUT_BASE_DIR + "com/miguno/avro/twitter_schema.scala"
   val TEST_EXPECTED_SPECIFIC_MESSAGE =

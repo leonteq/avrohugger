@@ -7,7 +7,7 @@ import avrohugger.matchers.TypeMatcher
 import avrohugger.types._
 import avrohugger.stores.SchemaStore
 import org.apache.avro.Schema.Type.RECORD
-import org.apache.avro.{Protocol, Schema}
+import org.apache.avro.{ Protocol, Schema }
 import treehugger.forest._
 import definitions._
 import treehuggerDSL._
@@ -19,136 +19,154 @@ object SpecificImporter extends Importer {
   def getImports(
     schemaOrProtocol: Either[Schema, Protocol],
     currentNamespace: Option[String],
-    schemaStore: SchemaStore,
-    typeMatcher: TypeMatcher): List[Import] = {
-      
+    schemaStore:      SchemaStore,
+    typeMatcher:      TypeMatcher
+  ): Set[Import] = {
+
+//    println("1")
     val switchAnnotSymbol = RootClass.newClass("scala.annotation.switch")
-    val switchImport = IMPORT(switchAnnotSymbol)
-    val topLevelSchemas =
-      getTopLevelSchemas(schemaOrProtocol, schemaStore, typeMatcher)
+//    println("2")
+    val switchImport = Set(IMPORT(switchAnnotSymbol))
+//    println("3")
+    val topLevelSchemas = getTopLevelSchemas(schemaOrProtocol, schemaStore, typeMatcher)
+//    println("4")
     val recordSchemas = getRecordSchemas(topLevelSchemas)
+//    println("5")
     val enumSchemas = getEnumSchemas(topLevelSchemas)
+//    println("6")
     val userDefinedDeps = getUserDefinedImports(recordSchemas ++ enumSchemas, currentNamespace, typeMatcher)
+//    println("7")
     val shapelessDeps = getShapelessImports(recordSchemas, typeMatcher)
+//    println("8")
     val libraryDeps = shapelessDeps
-    
+//    println("9")
+
     schemaOrProtocol match {
-      case Left(schema) => {
-        if (schema.getType == RECORD) switchImport :: libraryDeps ::: userDefinedDeps
-        else libraryDeps ++ userDefinedDeps
-      }
-      case Right(protocol) => {
-        val types = protocol.getTypes().asScala.toList
+      case Left(schema) =>
+        if (schema.getType == RECORD) libraryDeps ++ userDefinedDeps ++ switchImport
+        else libraryDeps ++ userDefinedDeps ++ switchImport
+      case Right(protocol) =>
         val messages = protocol.getMessages.asScala.toMap
-        if (messages.isEmpty) switchImport :: libraryDeps ::: userDefinedDeps // for ADT
-        else List.empty // for RPC
-      }
+        if (messages.isEmpty) libraryDeps ++ userDefinedDeps ++ switchImport // for ADT
+        else switchImport // for RPC
     }
   }
 
-  /**
-    * Shapeless representations of Coproduct are by default only active when `union`
-    * is defined with more than two types or three types where one of them is nullable.
-    * Otherwise the default values require no special imports
-    * since they are codegen in terms of [[Option]] and [[Either]]
+  /** Shapeless representations of Coproduct are by default only active when `union` is defined with more than two types or three types
+    * where one of them is nullable. Otherwise the default values require no special imports since they are codegen in terms of [[Option]]
+    * and [[Either]]
     */
-  private[this] def getShapelessImports(
-    topLevelRecordSchemas: List[Schema],
-    typeMatcher: TypeMatcher): List[Import] = {
+  private[this] def getShapelessImports(topLevelRecordSchemas: Set[Schema], typeMatcher: TypeMatcher): Set[Import] = {
 
     def determineShapelessCoproductImports(
-      field: Schema.Field,
-      schema: Schema,
-      typeMatcher: TypeMatcher,
-      potentialRecursives: List[Schema]): List[String] = schema.getType match {
-      case Schema.Type.UNION  =>
-        coproductImportsForUnionType(field, schema, typeMatcher) ++
-          schema.getTypes().asScala.toList.flatMap(s =>
-            determineShapelessCoproductImports(field, s, typeMatcher, potentialRecursives))
-      case Schema.Type.ARRAY  =>
-        determineShapelessCoproductImports(field, schema.getElementType(), typeMatcher, potentialRecursives)
-      case Schema.Type.MAP    =>
-        determineShapelessCoproductImports(field, schema.getValueType(), typeMatcher, potentialRecursives)
-      case Schema.Type.RECORD =>
-        schema.getFields().asScala.toList.flatMap(f => {
-          if (potentialRecursives.map(_.getFullName).contains(schema.getFullName)) List.empty
-          else determineShapelessCoproductImports(field, f.schema(), typeMatcher, potentialRecursives:+schema)
-        })
-      case _ =>
-        List.empty[String]
-    }
+      field:               Schema.Field,
+      schema:              Schema,
+      typeMatcher:         TypeMatcher,
+      potentialRecursives: Set[String]
+    ): Set[String] =
+      if (potentialRecursives.contains(schema.getFullName)) Set.empty
+      else
+        schema.getType match {
+          case Schema.Type.UNION =>
+            coproductImportsForUnionType(field, schema, typeMatcher) ++
+              schema
+                .getTypes()
+                .asScala
+                .toList
+                .flatMap(s => determineShapelessCoproductImports(field, s, typeMatcher, potentialRecursives + schema.getFullName))
+          case Schema.Type.ARRAY =>
+            determineShapelessCoproductImports(field, schema.getElementType(), typeMatcher, potentialRecursives + schema.getFullName)
+          case Schema.Type.MAP =>
+            determineShapelessCoproductImports(field, schema.getValueType(), typeMatcher, potentialRecursives + schema.getFullName)
+          case Schema.Type.RECORD =>
+            schema
+              .getFields()
+              .asScala
+              .toList
+              .flatMap { f =>
+                determineShapelessCoproductImports(field, f.schema(), typeMatcher, potentialRecursives + schema.getFullName)
+              }
+              .toSet
+          case _ =>
+            Set.empty[String]
+        }
 
-    def determineShapelessTagImport(
-      schema: Schema,
-      typeMatcher: TypeMatcher,
-      potentialRecursives: List[Schema]): List[String] = schema.getType match {
-      case Schema.Type.UNION  => schema.getTypes().asScala.toList.flatMap(s =>
-                                   determineShapelessTagImport(s, typeMatcher, potentialRecursives))
-      case Schema.Type.ARRAY  => determineShapelessTagImport(schema.getElementType(), typeMatcher, potentialRecursives)
-      case Schema.Type.MAP    => determineShapelessTagImport(schema.getValueType(), typeMatcher, potentialRecursives)
-      case Schema.Type.RECORD => schema.getFields().asScala.toList.flatMap(f => {
-                                   if (potentialRecursives.map(_.getFullName).contains(schema.getFullName)) List.empty
-                                   else determineShapelessTagImport(f.schema, typeMatcher, potentialRecursives:+schema)
-                                 })
-      case Schema.Type.BYTES  => importsForBigDecimalTagged(schema)
-      case _ => List.empty[String]
-    }
+    def determineShapelessTagImport(schema: Schema, typeMatcher: TypeMatcher, potentialRecursives: Set[String]): Set[String] =
+      if (potentialRecursives.contains(schema.getFullName)) Set.empty
+      else
+        schema.getType match {
+          case Schema.Type.UNION =>
+            schema
+              .getTypes()
+              .asScala
+              .toList
+              .flatMap(s => determineShapelessTagImport(s, typeMatcher, potentialRecursives + schema.getFullName))
+              .toSet
+          case Schema.Type.ARRAY =>
+            determineShapelessTagImport(schema.getElementType(), typeMatcher, potentialRecursives + schema.getFullName)
+          case Schema.Type.MAP => determineShapelessTagImport(schema.getValueType(), typeMatcher, potentialRecursives + schema.getFullName)
+          case Schema.Type.RECORD =>
+            schema
+              .getFields()
+              .asScala
+              .toList
+              .flatMap { f =>
+                determineShapelessTagImport(f.schema, typeMatcher, potentialRecursives + schema.getFullName)
+              }
+              .toSet
+          case Schema.Type.BYTES => importsForBigDecimalTagged(schema)
+          case _                 => Set.empty[String]
+        }
 
-    def importsForBigDecimalTagged(schemas: Schema*): List[String] =
-      schemas.find { schema =>
-        schema.getType == Schema.Type.BYTES && LogicalType.foldLogicalTypes(
-          schema = schema,
-          default = false) {
-            case Decimal(_, _) => typeMatcher.avroScalaTypes.decimal match {
-              case ScalaBigDecimal(_) => false
+    def importsForBigDecimalTagged(schemas: Schema*): Set[String] =
+      schemas
+        .find { schema =>
+          schema.getType == Schema.Type.BYTES && LogicalType.foldLogicalTypes(schema = schema, default = false) { case Decimal(_, _) =>
+            typeMatcher.avroScalaTypes.decimal match {
+              case ScalaBigDecimal(_)              => false
               case ScalaBigDecimalWithPrecision(_) => true
             }
+          }
         }
-      }.map(_ => List("tag.@@")).getOrElse(Nil)
+        .map(_ => Set("tag.@@"))
+        .getOrElse(Set())
 
-    def coproductImportsForUnionType(
-      field: Schema.Field,
-      unionSchema: Schema,
-      typeMatcher: TypeMatcher): List[String] = {
+    def coproductImportsForUnionType(field: Schema.Field, unionSchema: Schema, typeMatcher: TypeMatcher): Set[String] = {
       val thresholdNonNullTypes = typeMatcher.avroScalaTypes.union match {
-        case OptionalShapelessCoproduct => 0 // if a union contains at least one type, then it will need :+:
-        case OptionShapelessCoproduct => 1
+        case OptionalShapelessCoproduct     => 0 // if a union contains at least one type, then it will need :+:
+        case OptionShapelessCoproduct       => 1
         case OptionEitherShapelessCoproduct => 2 // unions of one nullable type become Option, two become Either
       }
-      val unionTypes = unionSchema.getTypes().asScala.toList
+      val unionTypes        = unionSchema.getTypes().asScala.toList
       val unionNonNullTypes = unionTypes.filterNot(_.getType == Schema.Type.NULL)
-      val unionContainsNull: Boolean = unionNonNullTypes.length < unionTypes.length
+      val unionContainsNull:    Boolean = unionNonNullTypes.length < unionTypes.length
       val isShapelessCoproduct: Boolean = unionNonNullTypes.length > thresholdNonNullTypes
-      val hasDefaultValue: Boolean = !unionContainsNull
-      val unionImports = if (isShapelessCoproduct && hasDefaultValue)
-        List(":+:", "CNil", "Coproduct")
+      val hasDefaultValue:      Boolean = !unionContainsNull
+      if (isShapelessCoproduct && hasDefaultValue)
+        Set(":+:", "CNil", "Coproduct")
       else if (isShapelessCoproduct)
-        List(":+:", "CNil")
+        Set(":+:", "CNil")
       else
-        List.empty[String]
+        Set.empty[String]
+    }
 
-      unionImports
-    }
-    val shapelessImport: List[String] => List[Import] = {
-      case Nil          => Nil
-      case head :: Nil  => List(IMPORT(RootClass.newClass(s"shapeless.$head")))
-      case list         => List(IMPORT(RootClass.newClass(s"shapeless.{${list.mkString(", ")}}")))
-    }
-    val shapelessCopSymbols: List[String] =
+    def shapelessImport(x: Set[String]): Set[Import] =
+      x.headOption.map(_ => Set(IMPORT(RootClass.newClass(s"shapeless.{${x.mkString(", ")}}")))).getOrElse(Set())
+
+    val shapelessCopSymbols: Set[String] =
       for {
         topLevelRecordSchema <- topLevelRecordSchemas
-        field <- topLevelRecordSchema.getFields().asScala
-        symbol <- determineShapelessCoproductImports(field, field.schema(), typeMatcher, List.empty[Schema])
+        field                <- topLevelRecordSchema.getFields().asScala
+        symbol               <- determineShapelessCoproductImports(field, field.schema(), typeMatcher, Set.empty[String])
       } yield symbol
-    val shapelessTag: List[String] =
+    val shapelessTag: Set[String] =
       for {
         topLevelRecordSchema <- topLevelRecordSchemas
-        field <- topLevelRecordSchema.getFields().asScala
-        symbol <- determineShapelessTagImport(field.schema(), typeMatcher, List.empty[Schema])
+        field                <- topLevelRecordSchema.getFields().asScala
+        symbol               <- determineShapelessTagImport(field.schema(), typeMatcher, Set.empty[String])
       } yield symbol
-      
-    shapelessImport(shapelessCopSymbols.distinct) ++
-      shapelessImport(shapelessTag.distinct)
+
+    shapelessImport(shapelessCopSymbols) ++ shapelessImport(shapelessTag)
   }
 
 }
