@@ -52,7 +52,8 @@ lazy val commonSettings = Seq(
         <url>http://github.com/julianpeeters</url>
       </developer>
     </developers>),
-  scalafmtOnCompile := true
+  scalafmtOnCompile := true,
+  releaseIgnoreUntrackedFiles := true
 )
 
 lazy val avrohugger = (project in file("."))
