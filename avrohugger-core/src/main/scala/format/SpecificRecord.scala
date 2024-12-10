@@ -5,7 +5,7 @@ import abstractions.SourceFormat
 import format.specific.{SpecificJavaTreehugger, SpecificScalaTreehugger}
 import matchers.TypeMatcher
 import matchers.custom.CustomNamespaceMatcher
-import models.CompilationUnit
+import models.{CompilationUnit, LazyCompilationUnit}
 import stores.{ClassStore, SchemaStore}
 import types._
 import org.apache.avro.{Protocol, Schema}
@@ -61,7 +61,7 @@ object SpecificRecord extends SourceFormat {
         schemaStore,
         restrictedFields,
         targetScalaPartialVersion)
-      val rpcTraitCompUnit = CompilationUnit(maybePath, rpcTraitString)
+      val rpcTraitCompUnit = LazyCompilationUnit(maybePath, rpcTraitString)
       val scalaCompUnits = localNonEnums.map(schema => {
         val scalaCompilationUnit = getScalaCompilationUnit(
           classStore,
@@ -215,7 +215,7 @@ object SpecificRecord extends SourceFormat {
       typeMatcher,
       restrictedFields,
       targetScalaPartialVersion)
-      .foreach(writeToFile)
+      .foreach(_.write())
   }
 
 }

@@ -2,6 +2,7 @@ package avrohugger
 package format
 package abstractions
 
+import avrohugger.models.{CompilationUnit, JavaCompilationUnit}
 import stores.ClassStore
 import org.apache.avro.Schema
 import org.apache.avro.compiler.specific.SpecificCompiler
@@ -18,13 +19,15 @@ import java.util.Comparator
 trait JavaTreehugger {
 
   def asJavaCodeString(
+    filePath: Option[Path],
     classStore: ClassStore,
     namespace: Option[String],
-    schema: Schema): String
+    schema: Schema): CompilationUnit
 
   def writeJavaTempFile(
     schema: Schema,
-    outDir: File): Unit = {
+    outDir: File,
+    destination: File): Unit = {
     // Uses Avro's SpecificCompiler, which only compiles from files, thus we
     // write the schema to a temp file so we can compile a Java enum from it.
     val tempSchemaFile = File.createTempFile(s"$outDir/${schema.getName}", ".avsc")
@@ -34,7 +37,7 @@ trait JavaTreehugger {
     out.close()
 
     try {
-      SpecificCompiler.compileSchema(tempSchemaFile, outDir)
+      SpecificCompiler.compileSchema(tempSchemaFile, destination)
     }
     catch {
       case ex: FileNotFoundException =>
@@ -44,13 +47,13 @@ trait JavaTreehugger {
     }
   }
 
-  protected def createTempDir(prefix: String): File =
+  def createTempDir(prefix: String): File =
     Files.createTempDirectory(
       FileSystems.getDefault.getPath(System.getProperty("java.io.tmpdir")),
       prefix
     ).toFile
 
-  protected def deleteTempDirOnExit(tempDir: File): Unit = {
+  def deleteTempDirOnExit(tempDir: File): Unit = {
     val paths: java.util.stream.Stream[java.nio.file.Path] =
       Files.walk(Paths.get(tempDir.getPath))
     val sorted: java.util.stream.Stream[java.nio.file.Path] =
