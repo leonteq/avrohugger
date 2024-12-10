@@ -167,7 +167,7 @@ object SpecificRecord extends SourceFormat {
             maybeOutDir,
             restrictedFields,
             targetScalaPartialVersion)
-          if (localRecords.length >= 1) scalaCompilationUnit +: javaCompilationUnits
+          if (localRecords.nonEmpty) scalaCompilationUnit +: javaCompilationUnits
           else javaCompilationUnits
         }
         else protocolToRPC(protocol)
