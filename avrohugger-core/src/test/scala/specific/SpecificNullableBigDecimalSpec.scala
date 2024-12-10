@@ -11,7 +11,7 @@ class SpecificNullableBigDecimalSpec extends Specification {
 
   def e1 = {
     val infile = new java.io.File("avrohugger-core/src/test/avro/nullable_bigdecimal.avsc")
-    val gen = new Generator(SpecificRecord)
+    val gen    = new Generator(SpecificRecord)
     val outDir = gen.defaultOutputDir + "/specific/"
     gen.fileToFile(infile, outDir)
 

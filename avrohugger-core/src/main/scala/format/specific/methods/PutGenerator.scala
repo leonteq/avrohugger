@@ -13,18 +13,20 @@ import treehuggerDSL._
 
 object PutGenerator {
 
-    def toDef(
-      classStore: ClassStore, 
-      namespace: Option[String], 
-      indexedFields: List[IndexedField],
-      typeMatcher: TypeMatcher,
-      classSymbol: ClassSymbol,
-      targetScalaPartialVersion: String) = {
+  def toDef(
+    classStore:                ClassStore,
+    namespace:                 Option[String],
+    indexedFields:             List[IndexedField],
+    typeMatcher:               TypeMatcher,
+    classSymbol:               ClassSymbol,
+    targetScalaPartialVersion: String
+  ) = {
 
-      def asPutCase(field: IndexedField) = {
-        CASE (LIT(field.idx)) ==> {
-          THIS DOT FieldRenamer.rename(field.avroField.name) :=
-            BLOCK(ScalaConverter.convertFromJava(
+    def asPutCase(field: IndexedField) =
+      CASE(LIT(field.idx)) ==> {
+        THIS DOT FieldRenamer.rename(field.avroField.name) :=
+          BLOCK(
+            ScalaConverter.convertFromJava(
               classStore,
               namespace,
               field.avroField.schema,
@@ -33,17 +35,19 @@ object PutGenerator {
               REF("value"),
               typeMatcher,
               classSymbol,
-              targetScalaPartialVersion))
+              targetScalaPartialVersion
+            )
+          )
             .AS(typeMatcher.toScalaType(classStore, namespace, field.avroField.schema))
-        }
       }
-      
-      val errorCase = CASE(WILDCARD) ==> NEW("org.apache.avro.AvroRuntimeException", LIT("Bad index"))
-      val casesPut = indexedFields.map(field => asPutCase(field)):+ errorCase
 
-      DEF("put", UnitClass) withParams(PARAM("field$", IntClass), PARAM("value", AnyClass)) := BLOCK(
-        REF("field$") withAnnots(ANNOT("switch")) MATCH(casesPut), UNIT
-      ) 
-    }
+    val errorCase = CASE(WILDCARD) ==> NEW("org.apache.avro.AvroRuntimeException", LIT("Bad index"))
+    val casesPut  = indexedFields.map(field => asPutCase(field)) :+ errorCase
+
+    DEF("put", UnitClass) withParams (PARAM("field$", IntClass), PARAM("value", AnyClass)) := BLOCK(
+      REF("field$") withAnnots (ANNOT("switch")) MATCH casesPut,
+      UNIT
+    )
+  }
 
 }

@@ -2,43 +2,48 @@ package avrohugger
 
 import avrohugger.format.abstractions.SourceFormat
 import avrohugger.format._
-import avrohugger.generators.{FileGenerator, StringGenerator}
-import avrohugger.input.parsers.{FileInputParser, StringInputParser}
+import avrohugger.generators.{ FileGenerator, StringGenerator }
+import avrohugger.input.parsers.{ FileInputParser, StringInputParser }
 import avrohugger.matchers.TypeMatcher
 import avrohugger.types.AvroScalaTypes
-import avrohugger.stores.{ClassStore, SchemaStore}
-import org.apache.avro.{Protocol, Schema}
+import avrohugger.stores.{ ClassStore, SchemaStore }
+import org.apache.avro.{ Protocol, Schema }
 import java.io.File
 
 // Unable to overload this class' methods because outDir uses a default value
-case class Generator(format: SourceFormat,
-                     avroScalaCustomTypes: Option[AvroScalaTypes] = None,
-                     avroScalaCustomNamespace: Map[String, String] = Map.empty,
-                     restrictedFieldNumber: Boolean = false,
-                     classLoader: ClassLoader = Thread.currentThread.getContextClassLoader,
-                     targetScalaPartialVersion: String = avrohugger.internal.ScalaVersion.version) {
+case class Generator(
+  format:                    SourceFormat,
+  avroScalaCustomTypes:      Option[AvroScalaTypes] = None,
+  avroScalaCustomNamespace:  Map[String, String] = Map.empty,
+  restrictedFieldNumber:     Boolean = false,
+  classLoader:               ClassLoader = Thread.currentThread.getContextClassLoader,
+  targetScalaPartialVersion: String = avrohugger.internal.ScalaVersion.version
+) {
 
-  val avroScalaTypes = avroScalaCustomTypes.getOrElse(format.defaultTypes)
-  val defaultOutputDir = "target/generated-sources"
-  lazy val fileParser = new FileInputParser
+  val avroScalaTypes    = avroScalaCustomTypes.getOrElse(format.defaultTypes)
+  val defaultOutputDir  = "target/generated-sources"
+  lazy val fileParser   = new FileInputParser
   lazy val stringParser = new StringInputParser
   lazy val schemaParser = new Schema.Parser
-  val classStore = new ClassStore
-  val schemaStore = new SchemaStore
-  val typeMatcher = new TypeMatcher(avroScalaTypes, avroScalaCustomNamespace)
-  val fileGenerator = new FileGenerator()
+  val classStore        = new ClassStore
+  val schemaStore       = new SchemaStore
+  val typeMatcher       = new TypeMatcher(avroScalaTypes, avroScalaCustomNamespace)
+  val fileGenerator     = new FileGenerator()
 
   //////////////// methods for writing definitions out to file /////////////////
-  def schemaToFile(
-    schema: Schema,
-    outDir: String = defaultOutputDir): Unit = {
+  def schemaToFile(schema: Schema, outDir: String = defaultOutputDir): Unit =
     fileGenerator.schemaToFile(
-      schema, outDir, format, classStore, schemaStore, typeMatcher, restrictedFieldNumber, targetScalaPartialVersion)
-  }
+      schema,
+      outDir,
+      format,
+      classStore,
+      schemaStore,
+      typeMatcher,
+      restrictedFieldNumber,
+      targetScalaPartialVersion
+    )
 
-  def protocolToFile(
-    protocol: Protocol,
-    outDir: String = defaultOutputDir): Unit = {
+  def protocolToFile(protocol: Protocol, outDir: String = defaultOutputDir): Unit =
     fileGenerator.protocolToFile(
       protocol,
       outDir,
@@ -47,12 +52,10 @@ case class Generator(format: SourceFormat,
       schemaStore,
       typeMatcher,
       restrictedFieldNumber,
-      targetScalaPartialVersion)
-  }
+      targetScalaPartialVersion
+    )
 
-  def stringToFile(
-    schemaStr: String,
-    outDir: String = defaultOutputDir): Unit = {
+  def stringToFile(schemaStr: String, outDir: String = defaultOutputDir): Unit =
     fileGenerator.stringToFile(
       schemaStr,
       outDir,
@@ -62,12 +65,10 @@ case class Generator(format: SourceFormat,
       stringParser,
       typeMatcher,
       restrictedFieldNumber,
-      targetScalaPartialVersion)
-  }
+      targetScalaPartialVersion
+    )
 
-  def fileToFile(
-    inFile: File,
-    outDir: String = defaultOutputDir): Unit = {
+  def fileToFile(inFile: File, outDir: String = defaultOutputDir): Unit =
     fileGenerator.fileToFile(
       inFile,
       outDir,
@@ -78,25 +79,28 @@ case class Generator(format: SourceFormat,
       typeMatcher,
       classLoader,
       restrictedFieldNumber,
-      targetScalaPartialVersion)
-  }
+      targetScalaPartialVersion
+    )
 
   //////// methods for writing to a list of definitions in String format ///////
-  def schemaToStrings(schema: Schema): Set[String] = {
-    StringGenerator.schemaToStrings(
-      schema, format, classStore, schemaStore, typeMatcher, restrictedFieldNumber, targetScalaPartialVersion)
-  }
+  def schemaToStrings(schema: Schema): Set[String] =
+    StringGenerator.schemaToStrings(schema, format, classStore, schemaStore, typeMatcher, restrictedFieldNumber, targetScalaPartialVersion)
 
-  def protocolToStrings(protocol: Protocol): List[String] = {
+  def protocolToStrings(protocol: Protocol): List[String] =
     StringGenerator.protocolToStrings(
-      protocol, format, classStore, schemaStore, typeMatcher, restrictedFieldNumber, targetScalaPartialVersion)
-  }
+      protocol,
+      format,
+      classStore,
+      schemaStore,
+      typeMatcher,
+      restrictedFieldNumber,
+      targetScalaPartialVersion
+    )
 
-  def clear() = {
+  def clear() =
     fileGenerator.clear()
-  }
 
-  def stringToStrings(schemaStr: String): List[String] = {
+  def stringToStrings(schemaStr: String): List[String] =
     StringGenerator.stringToStrings(
       schemaStr,
       format,
@@ -105,10 +109,10 @@ case class Generator(format: SourceFormat,
       stringParser,
       typeMatcher,
       restrictedFieldNumber,
-      targetScalaPartialVersion)
-  }
+      targetScalaPartialVersion
+    )
 
-  def fileToStrings(inFile: File): List[String] = {
+  def fileToStrings(inFile: File): List[String] =
     StringGenerator.fileToStrings(
       inFile,
       format,
@@ -118,7 +122,7 @@ case class Generator(format: SourceFormat,
       typeMatcher,
       classLoader,
       restrictedFieldNumber,
-      targetScalaPartialVersion)
-  }
+      targetScalaPartialVersion
+    )
 
 }

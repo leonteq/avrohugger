@@ -1,6 +1,5 @@
 package avrohugger
 
-
 import avrohugger.format.abstractions.SourceFormat
 import avrohugger.types._
 import org.specs2.Specification
@@ -13,26 +12,24 @@ trait SeqSpec {
   val protocolFile = new java.io.File("avrohugger-core/src/test/avro/array.avdl")
 
   def sourceFormat: SourceFormat
-  final def generator: Generator = Generator(sourceFormat)
+  final def generator:    Generator      = Generator(sourceFormat)
   final def defaultTypes: AvroScalaTypes = generator.format.defaultTypes
-  final def formatType: String = sourceFormat.getClass.getSimpleName.takeWhile(_.isLetterOrDigit).toLowerCase
+  final def formatType:   String         = sourceFormat.getClass.getSimpleName.takeWhile(_.isLetterOrDigit).toLowerCase
 
   def is: SpecStructure =
     s2"""A $formatType Generator should
-    correctly generate strings with Seq when asked for ${strings(types = defaultTypes.copy(array = ScalaSeq))}
-    correctly generate files with Seq when asked for ${files(types = defaultTypes.copy(array = ScalaSeq))}
-    correctly generate strings with List when asked for ${strings(types = defaultTypes.copy(array = ScalaList))}
-    correctly generate files with List when asked for ${files(types = defaultTypes.copy(array = ScalaList))}
-    correctly generate strings with Array when asked for ${strings(types = defaultTypes.copy(array = ScalaArray))}
-    correctly generate files with Array when asked for ${files(types = defaultTypes.copy(array = ScalaArray))}
+    correctly generate strings with Seq when asked for ${strings(types    = defaultTypes.copy(array = ScalaSeq))}
+    correctly generate files with Seq when asked for ${files(types        = defaultTypes.copy(array = ScalaSeq))}
+    correctly generate strings with List when asked for ${strings(types   = defaultTypes.copy(array = ScalaList))}
+    correctly generate files with List when asked for ${files(types       = defaultTypes.copy(array = ScalaList))}
+    correctly generate strings with Array when asked for ${strings(types  = defaultTypes.copy(array = ScalaArray))}
+    correctly generate files with Array when asked for ${files(types      = defaultTypes.copy(array = ScalaArray))}
     correctly generate strings with Vector when asked for ${strings(types = defaultTypes.copy(array = ScalaVector))}
-    correctly generate files with Vector when asked for ${files(types = defaultTypes.copy(array = ScalaVector))}"""
+    correctly generate files with Vector when asked for ${files(types     = defaultTypes.copy(array = ScalaVector))}"""
 
   def expectedOutput(formatType: String, arrayType: String): String
 
-
   def actualOutput = "example/idl/array/ArrayIdl.scala"
-
 
   final def strings(types: AvroScalaTypes = defaultTypes, input: java.io.File = protocolFile): MatchResult[String] = {
     val gen = generator.copy(avroScalaCustomTypes = Some(types))
@@ -47,10 +44,12 @@ trait SeqSpec {
 
   }
 
-  final def files(types: AvroScalaTypes = defaultTypes,
-                  input: java.io.File = protocolFile,
-                  actualOutput: String = actualOutput): MatchResult[String] = {
-    val gen = generator.copy(avroScalaCustomTypes = Some(types))
+  final def files(
+    types:        AvroScalaTypes = defaultTypes,
+    input:        java.io.File = protocolFile,
+    actualOutput: String = actualOutput
+  ): MatchResult[String] = {
+    val gen             = generator.copy(avroScalaCustomTypes = Some(types))
     val outputArrayType = types.array.toString
 
     val outDir = s"${gen.defaultOutputDir}/$formatType/$outputArrayType/"

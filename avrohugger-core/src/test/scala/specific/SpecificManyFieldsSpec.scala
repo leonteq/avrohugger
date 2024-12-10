@@ -7,19 +7,18 @@ import org.specs2._
 
 import java.io.File
 
-/**
-  * Test generating classes when >22 fields.
+/** Test generating classes when >22 fields.
   */
 class SpecificManyFieldsSpec extends Specification {
 
   val avdlPath = "avrohugger-core/src/test/avro/ManyFields.avdl"
   val avscPath = "avrohugger-core/src/test/avro/ManyFields.avsc"
-  
-  val genNonRestricted = new Generator(SpecificRecord, restrictedFieldNumber = false)
+
+  val genNonRestricted    = new Generator(SpecificRecord, restrictedFieldNumber = false)
   val outDirNonRestricted = genNonRestricted.defaultOutputDir + "/specific/non-restricted"
-  val genRestricted = new Generator(SpecificRecord, restrictedFieldNumber = true)
-  val outDirRestricted = genRestricted.defaultOutputDir + "/specific/restricted"
-  
+  val genRestricted       = new Generator(SpecificRecord, restrictedFieldNumber = true)
+  val outDirRestricted    = genRestricted.defaultOutputDir + "/specific/restricted"
+
   def is = s2"""
     A Specific Generator should
       generate cases classes when many fields are supported with AVDLs
@@ -45,14 +44,14 @@ class SpecificManyFieldsSpec extends Specification {
     val source = util.Util.readFile(s"$outDirNonRestricted/test/avsc/ManyFields.scala")
     source must contain("case class")
   }
-  
+
   def e3 = {
     val inputString = util.Util.readFile(avdlPath)
     genNonRestricted.stringToFile(inputString, outDirNonRestricted)
     val source = util.Util.readFile(s"$outDirNonRestricted/test/avdl/ManyFields.scala")
     source must contain("case class")
   }
-  
+
   def e4 = {
     val inputString = util.Util.readFile(avscPath)
     genNonRestricted.stringToFile(inputString, outDirNonRestricted)
@@ -63,27 +62,27 @@ class SpecificManyFieldsSpec extends Specification {
   def e5 = {
     genRestricted.fileToFile(new File(avdlPath), outDirRestricted)
     val source = util.Util.readFile(s"$outDirRestricted/test/avdl/ManyFields.scala")
-    source must not contain ("case class")
+    source must not contain "case class"
   }
-  
+
   def e6 = {
     genRestricted.fileToFile(new File(avscPath), outDirRestricted)
     val source = util.Util.readFile(s"$outDirRestricted/test/avsc/ManyFields.scala")
-    source must not contain ("case class")
+    source must not contain "case class"
   }
 
   def e7 = {
     val inputString = util.Util.readFile(avdlPath)
     genRestricted.stringToFile(inputString, outDirRestricted)
     val source = util.Util.readFile(s"$outDirRestricted/test/avdl/ManyFields.scala")
-    source must not contain ("case class")
+    source must not contain "case class"
   }
 
   def e8 = {
     val inputString = util.Util.readFile(avscPath)
     genRestricted.stringToFile(inputString, outDirRestricted)
     val source = util.Util.readFile(s"$outDirRestricted/test/avsc/ManyFields.scala")
-    source must not contain ("case class")
+    source must not contain "case class"
   }
 
 }

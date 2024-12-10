@@ -7,7 +7,7 @@ import org.specs2._
 
 class NamespaceExtractorSpec extends Specification {
 
-  private val schemaDef = 
+  private val schemaDef =
     """
      | {
      |  "namespace": "owner.namespace",
@@ -64,21 +64,17 @@ class NamespaceExtractorSpec extends Specification {
     "Return the namespace for array types" in $e4
 
   """
-  
-  def e1 = {
-    getReferredNamespace( ownerSchema.getField("stringField").schema ) === None
-  }
-  
-  def e2 = {
-    getReferredNamespace( ownerSchema.getField("unionOfrecordWithNamespaceField").schema ) === Some("yet.another.namespace")
-  }
-  
-  def e3 = {
-    getReferredNamespace( ownerSchema.getField("recordWithNamespaceField").schema ) === Some("other.namespace")
-  }
-  
-  def e4 = {
-    getReferredNamespace( ownerSchema.getField("arrayOfrecordWithNamespaceField").schema ) === Some("and.yet.another.namespace")
-  }
+
+  def e1 =
+    getReferredNamespace(ownerSchema.getField("stringField").schema) === None
+
+  def e2 =
+    getReferredNamespace(ownerSchema.getField("unionOfrecordWithNamespaceField").schema) === Some("yet.another.namespace")
+
+  def e3 =
+    getReferredNamespace(ownerSchema.getField("recordWithNamespaceField").schema) === Some("other.namespace")
+
+  def e4 =
+    getReferredNamespace(ownerSchema.getField("arrayOfrecordWithNamespaceField").schema) === Some("and.yet.another.namespace")
 
 }

@@ -5,22 +5,16 @@ import java.io.File
 import scala.annotation.tailrec
 import scala.io.Source
 
-/**
-  * The order in which avsc files are compiled depends on the underlying file
-  * system (under OSX its is alphabetical, under some linux distros it's not).
-  * This is an issue when you have a record type that is used in different
-  * other types. This ensures that dependent types are compiled in the
-  * correct order.
-  * Created by Jon Morra on 2/7/17.
+/** The order in which avsc files are compiled depends on the underlying file system (under OSX its is alphabetical, under some linux
+  * distros it's not). This is an issue when you have a record type that is used in different other types. This ensures that dependent types
+  * are compiled in the correct order. Created by Jon Morra on 2/7/17.
   */
 object AvdlFileSorter {
   def sortSchemaFiles(filesIterable: Iterable[File]): Seq[File] = {
-    val files = filesIterable.toList
-    val importsMap = files.map ( file => {
-      (file.getCanonicalFile, getImports(file).filter(_.exists))
-    }).toMap
-      
-    @tailrec def addFiles(processedFiles: Seq[File], remainingFiles: List[File]): Seq[File] = {
+    val files      = filesIterable.toList
+    val importsMap = files.map(file => (file.getCanonicalFile, getImports(file).filter(_.exists))).toMap
+
+    @tailrec def addFiles(processedFiles: Seq[File], remainingFiles: List[File]): Seq[File] =
       remainingFiles match {
         case Nil => processedFiles
         case h :: t =>
@@ -30,7 +24,6 @@ object AvdlFileSorter {
           else
             addFiles(processedFiles, t :+ h)
       }
-    }
     val result = addFiles(Seq.empty, files)
     result
   }
@@ -40,11 +33,13 @@ object AvdlFileSorter {
 
   private[this] def getImports(file: File): Vector[File] = {
     val source = Source.fromFile(file)
-    try {
-      source.getLines().collect{
-        case importPattern(currentImport) => new File(file.getParentFile, currentImport).getCanonicalFile
-      }.toVector
-    }
+    try
+      source
+        .getLines()
+        .collect { case importPattern(currentImport) =>
+          new File(file.getParentFile, currentImport).getCanonicalFile
+        }
+        .toVector
     finally source.close()
   }
 }

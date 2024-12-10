@@ -1,3 +1,6 @@
+import org.scalafmt.sbt.ScalafmtPlugin
+import org.scalafmt.sbt.ScalafmtPlugin.autoImport.scalafmtOnCompile
+
 lazy val avroVersion = "1.12.0"
 
 lazy val commonSettings = Seq(
@@ -48,7 +51,8 @@ lazy val commonSettings = Seq(
         <name>Julian Peeters</name>
         <url>http://github.com/julianpeeters</url>
       </developer>
-    </developers>)
+    </developers>),
+  scalafmtOnCompile := true
 )
 
 lazy val avrohugger = (project in file("."))

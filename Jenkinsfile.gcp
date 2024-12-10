@@ -2,7 +2,9 @@
 
 pipelineEportalLibrary {
     GITHUB_REPO = 'avrohugger'
-    RUN_SBT_TEST = false
-    RUN_YARN_TEST = false
     USE_FEATURE_RELEASE_PROCESS = true
+    RUN_SBT_TEST = false
+    RUN_SBT_IT_TEST = false
+    HAS_SBT_IT_TEST = false
+    SBT_CROSS_BUILD_ENABLED = true
 }

@@ -13,6 +13,5 @@ class SchemaStore {
 
   def accept(schema: Schema) =
     schemas += (schema.getFullName -> schema)
-  
 
 }
