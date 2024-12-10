@@ -1,0 +1,10 @@
+#!/usr/bin/env groovy
+
+pipelineEportalLibrary {
+    GITHUB_REPO = 'avrohugger'
+    USE_FEATURE_RELEASE_PROCESS = true
+    RUN_SBT_TEST = true
+    RUN_SBT_IT_TEST = true
+    HAS_SBT_IT_TEST = true
+    SBT_CROSS_BUILD_ENABLED = true
+}
