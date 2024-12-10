@@ -3,7 +3,7 @@ package format
 package abstractions
 
 import avrohugger.matchers.TypeMatcher
-import avrohugger.models.{CompilationUnit, JavaCompilationUnit, LazyCompilationUnit}
+import avrohugger.models.CompilationUnit
 import avrohugger.stores.{ClassStore, SchemaStore}
 import avrohugger.types._
 import org.apache.avro.Schema.Type.{ENUM, FIXED, RECORD}
@@ -123,7 +123,8 @@ trait SourceFormat {
 
   def getLocalSubtypes(protocol: Protocol): List[Schema] = {
     val protocolNS = protocol.getNamespace
-    protocol.getTypes().asScala.toList.filter(_.getNamespace == protocolNS)
+    val types = protocol.getTypes().asScala.toList
+    types.filter(_.getNamespace == protocolNS)
   }
 
   def getJavaEnumCompilationUnit(
@@ -134,11 +135,11 @@ trait SourceFormat {
                                   typeMatcher: TypeMatcher): CompilationUnit = {
     val maybeFilePath =
       getFilePath(namespace, Left(schema), maybeOutDir, typeMatcher)
-    javaTreehugger.asJavaCodeString(
-      maybeFilePath,
+    val codeString = javaTreehugger.asJavaCodeString(
       classStore,
       namespace,
       schema)
+    CompilationUnit(maybeFilePath, codeString)
   }
 
   // Uses treehugger trees so can't handle java enums, therefore Java enums
@@ -163,7 +164,7 @@ trait SourceFormat {
       schemaStore,
       restrictedFields,
       targetScalaPartialVersion)
-    LazyCompilationUnit(scalaFilePath, scalaString)
+    CompilationUnit(scalaFilePath, scalaString)
   }
 
   def isEnum(schema: Schema): Boolean = schema.getType == Schema.Type.ENUM
@@ -209,5 +210,23 @@ trait SourceFormat {
     "transient", "true", "try", "void", "volatile", "while",
     /* classnames use internally by the avro code generator */
     "Builder")
+
+  def writeToFile(compilationUnit: CompilationUnit): Unit = {
+    val path = compilationUnit.maybeFilePath match {
+      case Some(filePath) => filePath
+      case None => sys.error("Cannot write to file without a file path")
+    }
+    val contents = compilationUnit.codeString.getBytes()
+    try { // delete old and/or create new
+      Files.deleteIfExists(path) // delete file if exists
+      Files.createDirectories(path.getParent) // create all parent folders
+      Files.write(path, contents, StandardOpenOption.CREATE)
+      ()
+    }
+    catch {
+      case ex: FileNotFoundException => sys.error("File not found:" + ex)
+      case ex: IOException => sys.error("Problem using the file: " + ex)
+    }
+  }
 
 }

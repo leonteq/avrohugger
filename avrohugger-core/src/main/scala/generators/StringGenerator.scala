@@ -4,28 +4,27 @@ package generators
 import avrohugger.format.abstractions.SourceFormat
 import avrohugger.input.DependencyInspector
 import avrohugger.input.NestedSchemaExtractor
-import avrohugger.models.LazyCompilationUnit
 // import avrohugger.input.reflectivecompilation.schemagen._
-import avrohugger.input.parsers.{FileInputParser, StringInputParser}
+import avrohugger.input.parsers.{ FileInputParser, StringInputParser}
 import avrohugger.matchers.TypeMatcher
-import avrohugger.stores.{ClassStore, SchemaStore}
+import avrohugger.stores.{ ClassStore, SchemaStore }
 
 import java.io.{File, FileNotFoundException, IOException}
 
-import org.apache.avro.{Protocol, Schema}
+import org.apache.avro.{ Protocol, Schema }
 import org.apache.avro.Schema.Type.ENUM
 
 // Unable to overload this class' methods because outDir uses a default value
 private[avrohugger] object StringGenerator {
 
   def schemaToStrings(
-                       schema: Schema,
-                       format: SourceFormat,
-                       classStore: ClassStore,
-                       schemaStore: SchemaStore,
-                       typeMatcher: TypeMatcher,
-                       restrictedFields: Boolean,
-                       targetScalaPartialVersion: String): Set[String] = {
+    schema: Schema,
+    format: SourceFormat,
+    classStore: ClassStore,
+    schemaStore: SchemaStore,
+    typeMatcher: TypeMatcher,
+    restrictedFields: Boolean,
+    targetScalaPartialVersion: String): Set[String] = {
     val maybeNamespace = DependencyInspector.getReferredNamespace(schema)
     val topLevels =
       NestedSchemaExtractor.getNestedSchemas(schema, schemaStore, typeMatcher)
@@ -45,19 +44,17 @@ private[avrohugger] object StringGenerator {
         restrictedFields,
         targetScalaPartialVersion)
     })
-    compilationUnits.collect {
-      case compUnit: LazyCompilationUnit => removeExtraWarning(compUnit.codeString)
-    }
+    compilationUnits.map(compUnit => removeExtraWarning(compUnit.codeString))
   }
 
   def protocolToStrings(
-                         protocol: Protocol,
-                         format: SourceFormat,
-                         classStore: ClassStore,
-                         schemaStore: SchemaStore,
-                         typeMatcher: TypeMatcher,
-                         restrictedFields: Boolean,
-                         targetScalaPartialVersion: String): List[String] = {
+    protocol: Protocol,
+    format: SourceFormat,
+    classStore: ClassStore,
+    schemaStore: SchemaStore,
+    typeMatcher: TypeMatcher,
+    restrictedFields: Boolean,
+    targetScalaPartialVersion: String): List[String] = {
     val namespace: Option[String] = Option(protocol.getNamespace)
     val compilationUnits = format.asCompilationUnits(
       classStore,
@@ -68,20 +65,18 @@ private[avrohugger] object StringGenerator {
       typeMatcher,
       restrictedFields,
       targetScalaPartialVersion)
-    compilationUnits.collect {
-      case compUnit: LazyCompilationUnit => removeExtraWarning(compUnit.codeString)
-    }
+    compilationUnits.map(compUnit => removeExtraWarning(compUnit.codeString))
   }
 
   def stringToStrings(
-                       str: String,
-                       format: SourceFormat,
-                       classStore: ClassStore,
-                       schemaStore: SchemaStore,
-                       stringParser: StringInputParser,
-                       typeMatcher: TypeMatcher,
-                       restrictedFields: Boolean,
-                       targetScalaPartialVersion: String): List[String] = {
+    str: String,
+    format: SourceFormat,
+    classStore: ClassStore,
+    schemaStore: SchemaStore,
+    stringParser: StringInputParser,
+    typeMatcher: TypeMatcher,
+    restrictedFields: Boolean,
+    targetScalaPartialVersion: String): List[String] = {
     val schemaOrProtocols = stringParser.getSchemaOrProtocols(str, schemaStore)
     val codeStrings = schemaOrProtocols.flatMap(schemaOrProtocol => {
       schemaOrProtocol match {
@@ -99,15 +94,15 @@ private[avrohugger] object StringGenerator {
   }
 
   def fileToStrings(
-                     inFile: File,
-                     format: SourceFormat,
-                     classStore: ClassStore,
-                     schemaStore: SchemaStore,
-                     fileParser: FileInputParser,
-                     typeMatcher: TypeMatcher,
-                     classLoader: ClassLoader,
-                     restrictedFields: Boolean,
-                     targetScalaPartialVersion: String): List[String] = {
+    inFile: File,
+    format: SourceFormat,
+    classStore: ClassStore,
+    schemaStore: SchemaStore,
+    fileParser: FileInputParser,
+    typeMatcher: TypeMatcher,
+    classLoader: ClassLoader,
+    restrictedFields: Boolean,
+    targetScalaPartialVersion: String): List[String] = {
     try {
       val schemaOrProtocols: List[Either[Schema, Protocol]] =
         fileParser.getSchemaOrProtocols(inFile, format, classStore, classLoader)
@@ -128,14 +123,13 @@ private[avrohugger] object StringGenerator {
 
 
   def removeExtraWarning(codeStr: String): String = {
-    if (codeStr.startsWith(
-      """/** MACHINE-GENERATED FROM AVRO SCHEMA. DO NOT EDIT DIRECTLY */
-        |/**
-        | * Autogenerated by Avro
-        | *
-        | * DO NOT EDIT DIRECTLY
-        | */
-        |""".stripMargin))
+    if (codeStr.startsWith("""/** MACHINE-GENERATED FROM AVRO SCHEMA. DO NOT EDIT DIRECTLY */
+      |/**
+      | * Autogenerated by Avro
+      | *
+      | * DO NOT EDIT DIRECTLY
+      | */
+      |""".stripMargin))
       codeStr.replace("/** MACHINE-GENERATED FROM AVRO SCHEMA. DO NOT EDIT DIRECTLY */\n", "")
     else codeStr
   }

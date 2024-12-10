@@ -168,7 +168,7 @@ object Standard extends SourceFormat {
       typeMatcher,
       restrictedFields,
       targetScalaPartialVersion)
-    compilationUnits.foreach(_.write())
+    compilationUnits.foreach(writeToFile)
   }
 
   val defaultTypes: AvroScalaTypes = AvroScalaTypes.defaults
