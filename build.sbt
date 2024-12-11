@@ -53,7 +53,7 @@ lazy val commonSettings = Seq(
   scalafmtOnCompile := true,
 //  scmInfo := Some(ScmInfo(url("https://github.com/leonteq/eportal-oidc-lib"), "scm:git:git@github.com:leonteq/eportal-oidc-lib.git")),
   artifactType := ArtifactType.JarLibrary,
-  releaseIgnoreUntrackedFiles := true
+//  releaseIgnoreUntrackedFiles := true
 )
 
 lazy val avrohugger = (project in file("."))
