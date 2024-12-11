@@ -27,7 +27,7 @@ lazy val commonSettings = Seq(
   }},
   // for testing
   libraryDependencies += "org.specs2" %% "specs2-core" % "4.20.2" % "test",
-//  publishMavenStyle := true,
+  publishMavenStyle := true,
   Test / publishArtifact := false,
 //  publishTo := {
 //  if (isSnapshot.value)
