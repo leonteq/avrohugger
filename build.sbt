@@ -60,6 +60,7 @@ lazy val avrohugger = (project in file("."))
   .enablePlugins(EPortalSbtSettings)
   .settings(
     commonSettings,
+    publishArtifact := false,
     Release.parentReleaseSettings(Seq.empty, "avrohugger", buildRootProject = true)
   ).aggregate(`avrohugger-core`, `avrohugger-filesorter`, `avrohugger-tools`)
 
