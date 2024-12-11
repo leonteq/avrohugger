@@ -105,6 +105,7 @@ lazy val `avrohugger-tools` = (project in file("avrohugger-tools"))
       case PathList("javax", "servlet", xs @ _*)    => MergeStrategy.first
       case PathList("org","jline", xs @ _*)         => MergeStrategy.first
       case p if p.contains("module-info.class")     => MergeStrategy.discard
+      case p if p.contains("BuildInfo$.class")     => MergeStrategy.discard
       case x =>
         val oldStrategy = (Global / assembly / assemblyMergeStrategy).value
         oldStrategy(x)
