@@ -61,11 +61,20 @@ lazy val avrohugger = (project in file("."))
   .settings(
     commonSettings,
     publishArtifact := false,
-    Release.parentReleaseSettings(Seq.empty, "avrohugger", buildRootProject = true)
+    Release.parentReleaseSettings(
+      Seq(
+        `avrohugger-core`,
+        `avrohugger-filesorter`,
+        `avrohugger-tools`,
+      ),
+      "avrohugger"
+    )
+      //Release.parentReleaseSettings(Seq.empty, "avrohugger", buildRootProject = true)
   ).aggregate(`avrohugger-core`, `avrohugger-filesorter`, `avrohugger-tools`)
 
 
 lazy val `avrohugger-core` = (project in file("avrohugger-core"))
+  .enablePlugins(EPortalSbtSettings)
   .settings(
     commonSettings,
     libraryDependencies += ("com.eed3si9n" %% "treehugger" % "0.4.4").cross(CrossVersion.for3Use2_13),
@@ -73,12 +82,14 @@ lazy val `avrohugger-core` = (project in file("avrohugger-core"))
   )
 
 lazy val `avrohugger-filesorter` = (project in file("avrohugger-filesorter"))
+  .enablePlugins(EPortalSbtSettings)
   .settings(
     commonSettings,
     libraryDependencies += "io.spray" %% "spray-json" % "1.3.6"
   )
 
 lazy val `avrohugger-tools` = (project in file("avrohugger-tools"))
+  .enablePlugins(EPortalSbtSettings)
   .settings(
     commonSettings,
     libraryDependencies += "org.apache.avro" % "avro-tools" % avroVersion
