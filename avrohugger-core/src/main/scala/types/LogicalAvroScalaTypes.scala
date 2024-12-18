@@ -28,7 +28,13 @@ case object JavaTimeZonedDateTime extends AvroScalaTimestampType
 
 sealed trait AvroScalaLocalTimestampType extends Serializable
 case object JavaTimeLocalDateTime extends AvroScalaLocalTimestampType
-case object UnderlyingPrimitive extends AvroScalaTimeType with AvroScalaTimeMillisType with AvroScalaTimestampMillisType with AvroScalaTimestampType with AvroScalaLocalTimestampType with AvroScalaDateType
+case object UnderlyingPrimitive
+    extends AvroScalaTimeType
+    with AvroScalaTimeMillisType
+    with AvroScalaTimestampMillisType
+    with AvroScalaTimestampType
+    with AvroScalaLocalTimestampType
+    with AvroScalaDateType
 sealed abstract class LogicalType(name: String)
 case class Decimal(precision: Int, scale: Int) extends LogicalType("decimal")
 case object Date extends LogicalType("date")
@@ -41,24 +47,24 @@ case object TimeMillis extends LogicalType("time-millis")
 case object UUID extends LogicalType("uuid")
 
 object LogicalType {
-  
+
   def apply(logicalType: org.apache.avro.LogicalType): Option[LogicalType] = logicalType match {
-    case d: org.apache.avro.LogicalTypes.Decimal => Some(Decimal(d.getPrecision, d.getScale))
-    case _: org.apache.avro.LogicalTypes.Date => Some(Date)
-    case _: org.apache.avro.LogicalTypes.TimestampMillis => Some(TimestampMillis)
-    case _: org.apache.avro.LogicalTypes.TimestampMicros => Some(TimestampMicros)
+    case d: org.apache.avro.LogicalTypes.Decimal              => Some(Decimal(d.getPrecision, d.getScale))
+    case _: org.apache.avro.LogicalTypes.Date                 => Some(Date)
+    case _: org.apache.avro.LogicalTypes.TimestampMillis      => Some(TimestampMillis)
+    case _: org.apache.avro.LogicalTypes.TimestampMicros      => Some(TimestampMicros)
     case _: org.apache.avro.LogicalTypes.LocalTimestampMillis => Some(LocalTimestampMillis)
     case _: org.apache.avro.LogicalTypes.LocalTimestampMicros => Some(LocalTimestampMicros)
-    case _: org.apache.avro.LogicalTypes.TimeMicros => Some(TimeMicros)
-    case _: org.apache.avro.LogicalTypes.TimeMillis => Some(TimeMillis)
+    case _: org.apache.avro.LogicalTypes.TimeMicros           => Some(TimeMicros)
+    case _: org.apache.avro.LogicalTypes.TimeMillis           => Some(TimeMillis)
     case _ if logicalType.getName == "uuid" => Some(UUID)
-    case _ => None
+    case _                                  => None
   }
-  
-  def foldLogicalTypes[A](schema: Schema, default: => A)(cases : PartialFunction[LogicalType, A]): A =
+
+  def foldLogicalTypes[A](schema: Schema, default: => A)(cases: PartialFunction[LogicalType, A]): A =
     Option(schema.getLogicalType) match {
       case Some(tpe) => LogicalType(tpe).flatMap(cases.lift(_)).getOrElse(default)
-      case _ => default
+      case _         => default
     }
 
 }

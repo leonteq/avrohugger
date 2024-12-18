@@ -1,6 +1,6 @@
 package test
 
-import avrohugger.filesorter.{AvdlFileSorter, AvscFileSorter}
+import avrohugger.filesorter.{ AvdlFileSorter, AvscFileSorter }
 
 import java.io.File
 
@@ -10,8 +10,8 @@ import org.apache.avro.generic.GenericData.StringType
 import org.specs2.mutable.Specification
 
 class FileSorterSpec extends Specification {
-  val sourceDir = new File(getClass.getClassLoader.getResource("avro").toURI)
-  val targetDir = new File(sourceDir.getParentFile, "generated")
+  val sourceDir    = new File(getClass.getClassLoader.getResource("avro").toURI)
+  val targetDir    = new File(sourceDir.getParentFile, "generated")
   val targetRevDir = new File(sourceDir.getParentFile, "generated/rev")
 
   val fullyQualifiedNames = Seq(
@@ -19,49 +19,40 @@ class FileSorterSpec extends Specification {
     new File(sourceDir, "b.avsc"),
     new File(sourceDir, "c.avsc"),
     new File(sourceDir, "d.avsc"),
-    new File(sourceDir, "e.avsc"))
-
-
-  val fixedNames = Seq(
-    new File(sourceDir, "amain/fixedRecord.avsc"),
-    new File(sourceDir, "imports/fixed.avsc")
+    new File(sourceDir, "e.avsc")
   )
+
+  val fixedNames = Seq(new File(sourceDir, "amain/fixedRecord.avsc"), new File(sourceDir, "imports/fixed.avsc"))
 
   val simpleNames = Seq(
     new File(sourceDir, "_a.avsc"),
     new File(sourceDir, "_b.avsc"),
     new File(sourceDir, "_c.avsc"),
     new File(sourceDir, "_d.avsc"),
-    new File(sourceDir, "_e.avsc"))
-    
-  val fileNames = Seq(
-    new File(sourceDir, "a.avdl"),
-    new File(sourceDir, "foo/a.avdl"),
-    new File(sourceDir, "c.avdl"))
+    new File(sourceDir, "_e.avsc")
+  )
+
+  val fileNames = Seq(new File(sourceDir, "a.avdl"), new File(sourceDir, "foo/a.avdl"), new File(sourceDir, "c.avdl"))
 
   val expectedOrderFullyQualifiedNames = Seq(
     new File(sourceDir, "c.avsc"),
     new File(sourceDir, "e.avsc"),
     new File(sourceDir, "d.avsc"),
     new File(sourceDir, "b.avsc"),
-    new File(sourceDir, "a.avsc"))
-
-  val expectedOrderFixedNames = Seq(
-    new File(sourceDir, "imports/fixed.avsc"),
-    new File(sourceDir, "amain/fixedRecord.avsc")
+    new File(sourceDir, "a.avsc")
   )
+
+  val expectedOrderFixedNames = Seq(new File(sourceDir, "imports/fixed.avsc"), new File(sourceDir, "amain/fixedRecord.avsc"))
 
   val expectedOrderSimpleNames = Seq(
     new File(sourceDir, "_c.avsc"),
     new File(sourceDir, "_e.avsc"),
     new File(sourceDir, "_d.avsc"),
     new File(sourceDir, "_b.avsc"),
-    new File(sourceDir, "_a.avsc"))
-  
-  val expectdOrderFileNames = Seq(
-    new File(sourceDir, "a.avdl"),
-    new File(sourceDir, "foo/a.avdl"),
-    new File(sourceDir, "c.avdl"))
+    new File(sourceDir, "_a.avsc")
+  )
+
+  val expectdOrderFileNames = Seq(new File(sourceDir, "a.avdl"), new File(sourceDir, "foo/a.avdl"), new File(sourceDir, "c.avdl"))
 
   val avscSourceFiles = fullyQualifiedNames ++ simpleNames
   val avdlSourceFiles = fileNames
@@ -76,16 +67,16 @@ class FileSorterSpec extends Specification {
   "Schema files with Fixed type should be sorted" >> {
     AvscFileSorter.sortSchemaFiles(fixedNames) must beEqualTo(expectedOrderFixedNames)
   }
-  
+
   "AVDL files should be sorted correctly for imports" >> {
     AvdlFileSorter.sortSchemaFiles(avdlSourceFiles) must beEqualTo(expectdOrderFileNames)
     AvdlFileSorter.sortSchemaFiles(avdlSourceFiles.reverse) must beEqualTo(expectdOrderFileNames)
   }
 
   "It should be possible to compile types depending on others if source files are provided in right order" >> {
-    val parser = new Schema.Parser()
-    val parserRev = new Schema.Parser()
-    val packageDir = new File(targetDir, "com/cavorite")
+    val parser        = new Schema.Parser()
+    val parserRev     = new Schema.Parser()
+    val packageDir    = new File(targetDir, "com/cavorite")
     val packageRevDir = new File(targetRevDir, "com/cavorite")
 
     val aJavaFile = new File(packageDir, "A.java")
@@ -138,14 +129,14 @@ class FileSorterSpec extends Specification {
 
     for (schemaFile <- AvscFileSorter.sortSchemaFiles(avscSourceFiles)) {
       val schemaAvr = parser.parse(schemaFile)
-      val compiler = new SpecificCompiler(schemaAvr)
+      val compiler  = new SpecificCompiler(schemaAvr)
       compiler.setStringType(StringType.CharSequence)
       compiler.compileToDestination(null, targetDir)
     }
 
     for (schemaFile <- AvscFileSorter.sortSchemaFiles(avscSourceFiles.reverse)) {
       val schemaAvr = parserRev.parse(schemaFile)
-      val compiler = new SpecificCompiler(schemaAvr)
+      val compiler  = new SpecificCompiler(schemaAvr)
       compiler.setStringType(StringType.CharSequence)
       compiler.compileToDestination(null, targetRevDir)
     }

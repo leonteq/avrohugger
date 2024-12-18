@@ -14,76 +14,69 @@ import scala.jdk.CollectionConverters._
 
 object ScalaDocGenerator {
 
-  def docToScalaDoc(
-    schemaOrProtocol: Either[Schema, Protocol],
-    tree: Tree): Tree = {
+  def docToScalaDoc(schemaOrProtocol: Either[Schema, Protocol], tree: Tree): Tree = {
 
-    def aFieldHasDoc(schema: Schema): Boolean = {
-      schema.getFields().asScala.exists(field => {
+    def aFieldHasDoc(schema: Schema): Boolean =
+      schema.getFields().asScala.exists { field =>
         val maybeFieldDoc = Option(field.doc)
         isDoc(maybeFieldDoc)
-      })
-    }
+      }
 
     def topLevelHasDoc(schema: Schema): Boolean = {
       val maybeSchemaDoc = Option(schema.getDoc)
       isDoc(maybeSchemaDoc)
     }
 
-    def isDoc(maybeDoc: Option[String]): Boolean = {
+    def isDoc(maybeDoc: Option[String]): Boolean =
       maybeDoc match {
         case Some(doc) => true
-        case None => false
+        case None      => false
       }
-    }
 
     // Need arbitrary number of fields, so can't use DocTags, must return String
     def getFieldFauxDocTags(schema: Schema): List[String] = {
-      val docStrings = schema.getFields().asScala.toList.map(field => {
+      val docStrings = schema.getFields().asScala.toList.map { field =>
         val fieldName = field.name
-        val fieldDoc = Option(field.doc).getOrElse("")
+        val fieldDoc  = Option(field.doc).getOrElse("")
         s"@param $fieldName $fieldDoc"
-      })
+      }
       docStrings
     }
 
-    def wrapClassWithDoc(schema: Schema, tree: Tree, docs: List[String]) = {
+    def wrapClassWithDoc(schema: Schema, tree: Tree, docs: List[String]) =
       if (topLevelHasDoc(schema) || aFieldHasDoc(schema)) tree.withDoc(docs)
       else tree
-    }
 
-    def wrapValueClassWithDoc(schema: Schema, tree: Tree, docs: List[String]) = {
+    def wrapValueClassWithDoc(schema: Schema, tree: Tree, docs: List[String]) =
       if (topLevelHasDoc(schema)) tree.withDoc(docs)
       else tree
-    }
 
-    def wrapEnumWithDoc(schema: Schema, tree: Tree, docs: List[String]) = {
+    def wrapEnumWithDoc(schema: Schema, tree: Tree, docs: List[String]) =
       if (topLevelHasDoc(schema)) tree.withDoc(docs)
       else tree
-    }
-    
-    def wrapTraitWithDoc(protocol: Protocol, tree: Tree, docs: List[String]) = {
+
+    def wrapTraitWithDoc(protocol: Protocol, tree: Tree, docs: List[String]) =
       if (isDoc(Option(protocol.getDoc))) tree.withDoc(docs)
       else tree
-    }
 
     val docStrings: List[String] = schemaOrProtocol match {
-      case Left(schema) => Option(schema.getDoc).toList
+      case Left(schema)    => Option(schema.getDoc).toList
       case Right(protocol) => Option(protocol.getDoc).toList
     }
 
     schemaOrProtocol match {
-      case Left(schema) => schema.getType match {
-        case RECORD =>
-          val paramDocs = getFieldFauxDocTags(schema)
-          wrapClassWithDoc(schema, tree, docStrings:::paramDocs)
-        case ENUM =>
-          wrapEnumWithDoc(schema, tree, docStrings)
-        case FIXED =>
-          wrapValueClassWithDoc(schema, tree, docStrings)
-        case _ =>
-          sys.error("Error generating ScalaDoc from Avro doc. Not FIXED/ENUM/RECORD")
-      }
+      case Left(schema) =>
+        schema.getType match {
+          case RECORD =>
+            val paramDocs = getFieldFauxDocTags(schema)
+            wrapClassWithDoc(schema, tree, docStrings ::: paramDocs)
+          case ENUM =>
+            wrapEnumWithDoc(schema, tree, docStrings)
+          case FIXED =>
+            wrapValueClassWithDoc(schema, tree, docStrings)
+          case _ =>
+            sys.error("Error generating ScalaDoc from Avro doc. Not FIXED/ENUM/RECORD")
+        }
       case Right(protocol) => wrapTraitWithDoc(protocol, tree, docStrings)
     }
 

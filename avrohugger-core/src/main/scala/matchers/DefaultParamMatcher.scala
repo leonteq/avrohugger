@@ -15,69 +15,52 @@ import scala.jdk.CollectionConverters._
 object DefaultParamMatcher {
 
   // for SpecificRecord
-  def asDefaultParam(
-    classStore: ClassStore,
-    avroSchema: Schema,
-    typeMatcher: TypeMatcher): Tree  = {
-
+  def asDefaultParam(classStore: ClassStore, avroSchema: Schema, typeMatcher: TypeMatcher): Tree =
     avroSchema.getType match {
 
       case Schema.Type.BOOLEAN => FALSE
-      case Schema.Type.INT     =>
-        LogicalType.foldLogicalTypes[Tree](
-          schema = avroSchema,
-          default = LIT(0)) {
+      case Schema.Type.INT =>
+        LogicalType.foldLogicalTypes[Tree](schema = avroSchema, default = LIT(0)) {
           case Date =>
-            CustomDefaultParamMatcher.checkCustomDateType(
-              typeMatcher.avroScalaTypes.date)
+            CustomDefaultParamMatcher.checkCustomDateType(typeMatcher.avroScalaTypes.date)
           case TimeMillis =>
-            CustomDefaultParamMatcher.checkCustomTimeMillisType(
-              typeMatcher.avroScalaTypes.timeMillis
-            )
+            CustomDefaultParamMatcher.checkCustomTimeMillisType(typeMatcher.avroScalaTypes.timeMillis)
         }
-      case Schema.Type.LONG    =>
-        LogicalType.foldLogicalTypes[Tree](
-          schema = avroSchema,
-          default = LIT(0L)) {
+      case Schema.Type.LONG =>
+        LogicalType.foldLogicalTypes[Tree](schema = avroSchema, default = LIT(0L)) {
           case TimestampMillis =>
-            CustomDefaultParamMatcher.checkCustomTimestampMillisType(
-              typeMatcher.avroScalaTypes.timestampMillis)
+            CustomDefaultParamMatcher.checkCustomTimestampMillisType(typeMatcher.avroScalaTypes.timestampMillis)
           case TimestampMicros =>
-            CustomDefaultParamMatcher.checkCustomTimestampMicrosType(
-              typeMatcher.avroScalaTypes.timestampMicros)
+            CustomDefaultParamMatcher.checkCustomTimestampMicrosType(typeMatcher.avroScalaTypes.timestampMicros)
           case LocalTimestampMillis =>
-            CustomDefaultParamMatcher.checkCustomLocalTimestampMillisType(
-              typeMatcher.avroScalaTypes.localTimestampMillis)
+            CustomDefaultParamMatcher.checkCustomLocalTimestampMillisType(typeMatcher.avroScalaTypes.localTimestampMillis)
           case LocalTimestampMicros =>
-            CustomDefaultParamMatcher.checkCustomLocalTimestampMicrosType(
-              typeMatcher.avroScalaTypes.localTimestampMicros)
+            CustomDefaultParamMatcher.checkCustomLocalTimestampMicrosType(typeMatcher.avroScalaTypes.localTimestampMicros)
           case TimeMicros =>
-            CustomDefaultParamMatcher.checkCustomTimeMicrosType(
-              typeMatcher.avroScalaTypes.timeMicros)
+            CustomDefaultParamMatcher.checkCustomTimeMicrosType(typeMatcher.avroScalaTypes.timeMicros)
         }
-      case Schema.Type.FLOAT   => LIT(0F)
-      case Schema.Type.DOUBLE  => LIT(0D)
-      case Schema.Type.STRING  =>
-        LogicalType.foldLogicalTypes[Tree](
-          schema = avroSchema,
-          default = LIT("")) {
-          case UUID => REF("java.util.UUID.randomUUID")
+      case Schema.Type.FLOAT  => LIT(0f)
+      case Schema.Type.DOUBLE => LIT(0d)
+      case Schema.Type.STRING =>
+        LogicalType.foldLogicalTypes[Tree](schema = avroSchema, default = LIT("")) { case UUID =>
+          REF("java.util.UUID.randomUUID")
         }
-      case Schema.Type.NULL    => NULL
-      case Schema.Type.FIXED   =>
+      case Schema.Type.NULL => NULL
+      case Schema.Type.FIXED =>
         val name = RootClass.newClass(s"${avroSchema.getNamespace()}.${classStore.generatedClasses(avroSchema)}")
-        REF(name).APPLY(CustomDefaultParamMatcher.checkCustomDecimalType(
-          decimalType = typeMatcher.avroScalaTypes.decimal,
-          schema = avroSchema,
-          default = ArrayClass.APPLY()))
-      case Schema.Type.ENUM    =>
+        REF(name).APPLY(
+          CustomDefaultParamMatcher
+            .checkCustomDecimalType(decimalType = typeMatcher.avroScalaTypes.decimal, schema = avroSchema, default = ArrayClass.APPLY())
+        )
+      case Schema.Type.ENUM =>
         CustomDefaultParamMatcher.checkCustomEnumType(typeMatcher.avroScalaTypes.`enum`)
-      case Schema.Type.BYTES   =>
+      case Schema.Type.BYTES =>
         CustomDefaultParamMatcher.checkCustomDecimalType(
           decimalType = typeMatcher.avroScalaTypes.decimal,
-          schema = avroSchema,
-          default = ArrayClass.APPLY())
-      case Schema.Type.RECORD  => NEW(classStore.generatedClasses(avroSchema))
+          schema      = avroSchema,
+          default     = ArrayClass.APPLY()
+        )
+      case Schema.Type.RECORD => NEW(classStore.generatedClasses(avroSchema))
       case Schema.Type.UNION =>
         val schemas = avroSchema.getTypes.asScala.toList
         if (avroSchema.isNullable) NONE
@@ -85,20 +68,23 @@ object DefaultParamMatcher {
           asDefaultParam(classStore, schemas.head, typeMatcher)
         else if (schemas.size == 2 && typeMatcher.avroScalaTypes.union.useEitherForTwoNonNullTypes)
           LEFT(asDefaultParam(classStore, schemas.head, typeMatcher))
-        else COPRODUCT(asDefaultParam(classStore, schemas.head, typeMatcher), schemas.map(typeMatcher.toScalaType(classStore, None, _).safeToString))
-      case Schema.Type.ARRAY   =>
+        else
+          COPRODUCT(
+            asDefaultParam(classStore, schemas.head, typeMatcher),
+            schemas.map(typeMatcher.toScalaType(classStore, None, _).safeToString)
+          )
+      case Schema.Type.ARRAY =>
         CustomDefaultParamMatcher.checkCustomArrayType(typeMatcher.avroScalaTypes.array) DOT "empty"
-      case Schema.Type.MAP     =>
+      case Schema.Type.MAP =>
         ID("Map") DOT "empty"
     }
-  }
 
-  private def COPRODUCT(defaultParam: Tree, tp: List[String]): Tree =  {
-      val copTypes: List[String] = tp :+ "CNil"
-      val chain: forest.Tree = INFIX_CHAIN(":+:", copTypes.map(t => Ident(t.safeToString)))
-      val chainedS = treeToString(chain)
-      val copType = typeRef(RootClass.newClass(newTypeName(chainedS)))
-      REF("shapeless.Coproduct") APPLYTYPE copType APPLY defaultParam
-    }
+  private def COPRODUCT(defaultParam: Tree, tp: List[String]): Tree = {
+    val copTypes: List[String] = tp :+ "CNil"
+    val chain:    forest.Tree  = INFIX_CHAIN(":+:", copTypes.map(t => Ident(t.safeToString)))
+    val chainedS = treeToString(chain)
+    val copType  = typeRef(RootClass.newClass(newTypeName(chainedS)))
+    REF("shapeless.Coproduct") APPLYTYPE copType APPLY defaultParam
+  }
 
 }

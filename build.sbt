@@ -1,13 +1,14 @@
-lazy val avroVersion = "1.11.4"
+import org.scalafmt.sbt.ScalafmtPlugin.autoImport.scalafmtOnCompile
+
+lazy val avroVersion = "1.12.0"
 
 lazy val commonSettings = Seq(
   organization := "com.julianpeeters",
-  version := "2.8.4",
   ThisBuild / versionScheme := Some("semver-spec"),
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
   Test / scalacOptions ++= Seq("-Yrangepos"),
-  scalaVersion := "3.3.4",
-  crossScalaVersions := Seq("2.12.20", "2.13.15", scalaVersion.value),
+  scalaVersion := "2.13.15",
+  crossScalaVersions := Seq("2.12.20", scalaVersion.value),
   libraryDependencies += "org.apache.avro" % "avro" % avroVersion,
   libraryDependencies += "org.apache.avro" % "avro-compiler" % avroVersion,
   libraryDependencies := { CrossVersion.partialVersion(scalaVersion.value) match {
@@ -26,14 +27,7 @@ lazy val commonSettings = Seq(
   }},
   // for testing
   libraryDependencies += "org.specs2" %% "specs2-core" % "4.20.2" % "test",
-  publishMavenStyle := true,
   Test / publishArtifact := false,
-  publishTo := {
-  if (isSnapshot.value)
-    Opts.resolver.sonatypeOssSnapshots.headOption
-  else
-    Some(Opts.resolver.sonatypeStaging)
-  },
   pomIncludeRepository := { _ => false },
   licenses := Seq("Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
   homepage := Some(url("https://github.com/julianpeeters/avrohugger")),
@@ -48,16 +42,29 @@ lazy val commonSettings = Seq(
         <name>Julian Peeters</name>
         <url>http://github.com/julianpeeters</url>
       </developer>
-    </developers>)
+    </developers>),
+  scalafmtOnCompile := true,
+  artifactType := ArtifactType.JarLibrary,
 )
 
 lazy val avrohugger = (project in file("."))
+  .enablePlugins(EPortalSbtSettings)
   .settings(
-    commonSettings
+    commonSettings,
+    publishArtifact := false,
+    Release.parentReleaseSettings(
+      Seq(
+        `avrohugger-core`,
+        `avrohugger-filesorter`,
+        `avrohugger-tools`,
+      ),
+      "avrohugger"
+    )
   ).aggregate(`avrohugger-core`, `avrohugger-filesorter`, `avrohugger-tools`)
 
 
 lazy val `avrohugger-core` = (project in file("avrohugger-core"))
+  .enablePlugins(EPortalSbtSettings)
   .settings(
     commonSettings,
     libraryDependencies += ("com.eed3si9n" %% "treehugger" % "0.4.4").cross(CrossVersion.for3Use2_13),
@@ -65,12 +72,14 @@ lazy val `avrohugger-core` = (project in file("avrohugger-core"))
   )
 
 lazy val `avrohugger-filesorter` = (project in file("avrohugger-filesorter"))
+  .enablePlugins(EPortalSbtSettings)
   .settings(
     commonSettings,
     libraryDependencies += "io.spray" %% "spray-json" % "1.3.6"
   )
 
 lazy val `avrohugger-tools` = (project in file("avrohugger-tools"))
+  .enablePlugins(EPortalSbtSettings)
   .settings(
     commonSettings,
     libraryDependencies += "org.apache.avro" % "avro-tools" % avroVersion
@@ -86,6 +95,7 @@ lazy val `avrohugger-tools` = (project in file("avrohugger-tools"))
       case PathList("javax", "servlet", xs @ _*)    => MergeStrategy.first
       case PathList("org","jline", xs @ _*)         => MergeStrategy.first
       case p if p.contains("module-info.class")     => MergeStrategy.discard
+      case p if p.contains("BuildInfo$.class")     => MergeStrategy.discard
       case x =>
         val oldStrategy = (Global / assembly / assemblyMergeStrategy).value
         oldStrategy(x)

@@ -7,7 +7,7 @@ import format.abstractions.avrohuggers.Protocolhugger
 import generators.ScalaDocGenerator
 import trees.{ SpecificObjectTree, SpecificTraitTree }
 import matchers.TypeMatcher
-import stores.{ClassStore, SchemaStore}
+import stores.{ ClassStore, SchemaStore }
 import org.apache.avro.Protocol
 import treehugger.forest._
 
@@ -16,18 +16,19 @@ import scala.jdk.CollectionConverters._
 object SpecificProtocolhugger extends Protocolhugger {
 
   def toTrees(
-    schemaStore: SchemaStore,
-    classStore: ClassStore,
-    namespace: Option[String],
-    protocol: Protocol,
-    typeMatcher: TypeMatcher,
-    maybeBaseTrait: Option[String],
-    maybeFlags: Option[List[Long]],
-    restrictedFields: Boolean,
-    targetScalaPartialVersion: String): List[Tree] = {
+    schemaStore:               SchemaStore,
+    classStore:                ClassStore,
+    namespace:                 Option[String],
+    protocol:                  Protocol,
+    typeMatcher:               TypeMatcher,
+    maybeBaseTrait:            Option[String],
+    maybeFlags:                Option[List[Long]],
+    restrictedFields:          Boolean,
+    targetScalaPartialVersion: String
+  ): List[Tree] = {
 
     val name: String = protocol.getName
-    val messages = protocol.getMessages.asScala.toMap
+    val messages         = protocol.getMessages.asScala.toMap
     val maybeProtocolDoc = Option(protocol.getDoc)
 
     if (messages.isEmpty) {
@@ -38,9 +39,9 @@ object SpecificProtocolhugger extends Protocolhugger {
 
       if (localNonEnums.length > 1 && typeMatcher.avroScalaTypes.protocol == types.ScalaADT) {
         val maybeNewBaseTrait = Some(name)
-        val maybeNewFlags = Some(List(Flags.FINAL.toLong))
-        val sealedTraitDef = SpecificTraitTree.toADTRootDef(protocol)
-        val subTypeDefs = localNonEnums.flatMap(schema => {
+        val maybeNewFlags     = Some(List(Flags.FINAL.toLong))
+        val sealedTraitDef    = SpecificTraitTree.toADTRootDef(protocol)
+        val subTypeDefs = localNonEnums.flatMap { schema =>
           SpecificSchemahugger.toTrees(
             schemaStore,
             classStore,
@@ -50,21 +51,21 @@ object SpecificProtocolhugger extends Protocolhugger {
             maybeNewBaseTrait,
             maybeNewFlags,
             restrictedFields,
-            targetScalaPartialVersion)
-        })
+            targetScalaPartialVersion
+          )
+        }
         sealedTraitDef +: subTypeDefs
       }
       // if only one Scala type is defined, then don't generate sealed trait
       else {
         // no sealed trait tree, but could still need a protocol doc at top
-        val docTrees = {
+        val docTrees =
           Option(protocol.getDoc) match {
             case Some(doc) =>
               List(ScalaDocGenerator.docToScalaDoc(Right(protocol), EmptyTree))
             case None => List.empty
           }
-        }
-        docTrees ::: localNonEnums.flatMap(schema => {
+        docTrees ::: localNonEnums.flatMap { schema =>
           SpecificSchemahugger.toTrees(
             schemaStore,
             classStore,
@@ -74,16 +75,12 @@ object SpecificProtocolhugger extends Protocolhugger {
             maybeBaseTrait,
             maybeFlags,
             restrictedFields,
-            targetScalaPartialVersion)
-          })
+            targetScalaPartialVersion
+          )
         }
-    }
-    else {
-      val rpcTraitDef = SpecificTraitTree.toRPCTraitDef(
-        classStore,
-        namespace,
-        protocol,
-        typeMatcher)
+      }
+    } else {
+      val rpcTraitDef  = SpecificTraitTree.toRPCTraitDef(classStore, namespace, protocol, typeMatcher)
       val companionDef = SpecificObjectTree.toTraitCompanionDef(protocol)
       List(rpcTraitDef, companionDef)
     }

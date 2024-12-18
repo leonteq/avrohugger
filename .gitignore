@@ -25,3 +25,6 @@ project/plugins/project/
 .bloop
 .vscode
 *metals.sbt
+
+.ivy2_credentials
+credentials.sbt
